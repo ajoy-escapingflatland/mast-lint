@@ -1,0 +1,304 @@
+# =============================================================================
+# MAST — Multi-Agent System Failure Taxonomy
+# =============================================================================
+# Source: Cemri, Pan, Yang, Agrawal, Chopra, Tiwari, Keutzer, Parameswaran,
+#         Klein, Ramchandran, Zaharia, Gonzalez, Stoica —
+#         "Why Do Multi-Agent LLM Systems Fail?" (arXiv:2503.13657)
+#
+# 14 failure modes across 3 categories. In the source study, human annotators
+# reached Cohen's kappa = 0.88 labeling these. That number is the yardstick
+# mast-lint's automated classifier is measured against (see evals/README.md).
+#
+# THIS FILE IS THE CORE OF THE PROJECT. Every judge prompt is rendered from it.
+# The operational_definition, signals, positive_example, and near_miss fields are
+# where the real IP lives — sharpen them as you label real traces. A near_miss is
+# a case that superficially looks like the mode but is NOT it; teaching the judge
+# the boundary is what lifts agreement.
+# =============================================================================
+
+version: "0.1.0"
+taxonomy: MAST
+source:
+  title: "Why Do Multi-Agent LLM Systems Fail?"
+  arxiv: "2503.13657"
+  human_kappa: 0.88
+
+categories:
+  - id: FC1
+    name: "Specification & System Design Failures"
+    summary: >
+      Failures rooted in how the system or its agents were specified, prompted,
+      or architected — the fault is baked in before any inter-agent dynamics.
+  - id: FC2
+    name: "Inter-Agent Misalignment"
+    summary: >
+      Failures in how agents communicate and coordinate — information is lost,
+      ignored, withheld, or misdirected between agents.
+  - id: FC3
+    name: "Task Verification & Termination"
+    summary: >
+      Failures in checking work and deciding when to stop — the system ends
+      wrongly, or accepts/rejects results without adequate verification.
+
+failure_modes:
+  # ------------------------- FC1: Specification & Design -------------------------
+  - id: FM-1.1
+    name: "Disobey Task Specification"
+    category: FC1
+    operational_definition: >
+      An agent violates explicit constraints or requirements of the task —
+      format, scope, required steps, or forbidden actions that were stated in
+      the prompt or task spec.
+    signals:
+      - "Output ignores an explicit constraint stated in the task"
+      - "A required step named in the instructions is skipped"
+      - "A forbidden action is taken despite being ruled out"
+    positive_example: >
+      Task says 'return valid JSON only'; the agent returns prose with a JSON
+      block embedded, breaking downstream parsing.
+    near_miss: >
+      The agent misunderstands an AMBIGUOUS instruction — that is FM-2.2 (Fail to
+      Ask for Clarification), not disobedience of a clear spec. A wrong answer from a
+      reasoning or calculation error (e.g. misreading the problem) is NOT
+      disobedience: FM-1.1 requires violating an EXPLICITLY STATED constraint —
+      format, scope, or a named required/forbidden step — not merely getting the task
+      wrong. Fabricating or hallucinating content is likewise not FM-1.1 unless a
+      stated constraint was thereby broken.
+    confused_with: [FM-1.2, FM-2.2, FM-2.6, FM-3.3]
+
+  - id: FM-1.2
+    name: "Disobey Role Specification"
+    category: FC1
+    operational_definition: >
+      An agent acts outside its assigned role or persona — doing another agent's
+      job, overstepping its mandate, or abandoning the responsibilities it was
+      defined to hold.
+    signals:
+      - "A 'reviewer' agent starts writing new code instead of reviewing"
+      - "An agent assumes authority/decisions reserved for another role"
+    positive_example: >
+      The tester agent, instead of testing, rewrites the implementation itself and
+      declares it correct — collapsing the separation the system depended on.
+    near_miss: >
+      An agent correctly performs its role but produces a wrong result — that is a
+      quality/verification issue (FC3), not a role violation.
+    confused_with: [FM-1.1]
+
+  - id: FM-1.3
+    name: "Step Repetition"
+    category: FC1
+    operational_definition: >
+      An agent needlessly repeats steps or actions already completed, causing
+      loops, wasted work, or stalled progress.
+    signals:
+      - "The same tool call with the same args is issued repeatedly"
+      - "An agent re-does a subtask a prior span already finished"
+    positive_example: >
+      Two agents keep re-summarizing the same document back and forth without
+      advancing the task, burning turns.
+    near_miss: >
+      Deliberate retry after a genuine failure (e.g. a tool errored) is not
+      repetition — repetition is redoing work that already SUCCEEDED. If identical
+      turns repeat because no agent recognizes the task is done (or unsolvable), the
+      ROOT failure is FM-1.5 (Unaware of Stopping Conditions); attribute the loop
+      there rather than ALSO firing FM-1.3 for the same spans.
+    confused_with: [FM-1.5]
+
+  - id: FM-1.4
+    name: "Loss of Conversation History"
+    category: FC1
+    operational_definition: >
+      Context or prior conversation state is unexpectedly dropped or truncated, so
+      an agent acts without information it previously had.
+    signals:
+      - "An agent asks for or re-derives something already established earlier"
+      - "A decision contradicts an earlier established fact that left the context"
+    positive_example: >
+      After several turns, the coder no longer 'remembers' the agreed function
+      signature and invents a new, incompatible one.
+    near_miss: >
+      If the whole conversation restarts, that is the sharper FM-2.1 (Conversation
+      Reset). FM-1.4 is partial/creeping loss, not a full reset.
+    confused_with: [FM-2.1]
+
+  - id: FM-1.5
+    name: "Unaware of Stopping Conditions"
+    category: FC1
+    operational_definition: >
+      An agent fails to recognize when the task's termination criteria are (or are
+      not) met — continuing when it should stop, or not knowing what 'done' means.
+    signals:
+      - "The system loops past an obvious completion point"
+      - "No agent holds or checks a definition of 'done'"
+    positive_example: >
+      The goal is reached at turn 4, but agents keep negotiating until a turn cap
+      cuts them off, never acknowledging completion.
+    near_miss: >
+      Stopping TOO EARLY on a still-incomplete task is FM-3.1 (Premature
+      Termination). FM-1.5 is about not understanding the stopping condition itself.
+      An endless loop is ONE failure: attribute it to the single sharpest mode —
+      FM-1.5 when no agent holds a definition of 'done', FM-1.3 for verbatim redo of
+      succeeded work, FM-2.1 for a full restart — not to all three at once.
+    confused_with: [FM-1.3, FM-3.1, FM-2.1]
+
+  # ------------------------- FC2: Inter-Agent Misalignment -----------------------
+  - id: FM-2.1
+    name: "Conversation Reset"
+    category: FC2
+    operational_definition: >
+      The dialogue unexpectedly restarts from scratch, discarding accumulated
+      progress and shared state.
+    signals:
+      - "An agent reintroduces the task as if it were turn 1"
+      - "Established sub-results vanish and work begins again"
+    positive_example: >
+      Midway through, an orchestrator re-issues the original prompt fresh and the
+      agents begin the whole task over, losing completed subtasks.
+    near_miss: >
+      Gradual, partial context loss without a full restart is FM-1.4 (Loss of
+      Conversation History).
+    confused_with: [FM-1.4]
+
+  - id: FM-2.2
+    name: "Fail to Ask for Clarification"
+    category: FC2
+    operational_definition: >
+      Facing ambiguous, missing, or conflicting information, an agent proceeds on
+      an assumption instead of asking, and the unresolved ambiguity harms the task.
+    signals:
+      - "An agent guesses at an underspecified requirement and proceeds"
+      - "Conflicting instructions are silently reconciled the wrong way"
+      - "A distractor or missing datum is silently used or ignored rather than flagged"
+    positive_example: >
+      The spec doesn't say 0- or 1-indexed; the coder silently assumes one, and the
+      tester assumes the other, producing a spurious mismatch.
+    near_miss: >
+      Disobeying a CLEAR instruction is FM-1.1, not this — FM-2.2 requires genuine
+      ambiguity that asking would have resolved. A silent divergence between two
+      agents' assumptions that neither raised is FM-2.6 (Reasoning-Action Mismatch)
+      or a coordination gap, not FM-2.2 — FM-2.2 needs an ambiguity a single agent
+      could and should have resolved by ASKING.
+    confused_with: [FM-1.1, FM-2.6]
+
+  - id: FM-2.3
+    name: "Task Derailment"
+    category: FC2
+    operational_definition: >
+      Agents drift away from the intended objective onto a tangent or a different
+      goal, and do not return.
+    signals:
+      - "Conversation shifts to a sub-topic and never comes back"
+      - "Effort concentrates on something the task did not ask for"
+      - "The task is reframed as a different kind of deliverable (e.g. answer a question -> build an app)"
+    positive_example: >
+      Asked to fix a bug, the agents spend the run debating a broader refactor and
+      never actually fix the reported bug.
+    near_miss: >
+      A brief, relevant digression that returns to the goal is not derailment;
+      derailment means the objective is effectively abandoned.
+    confused_with: [FM-1.1]
+
+  - id: FM-2.4
+    name: "Information Withholding"
+    category: FC2
+    operational_definition: >
+      An agent possesses information other agents need but fails to share it,
+      degrading the group's decisions.
+    signals:
+      - "An agent knows a constraint/result but never communicates it"
+      - "A downstream agent fails for lack of info an upstream agent held"
+    positive_example: >
+      The retriever agent finds the correct API version but only passes a summary
+      omitting it; the coder then targets the wrong version.
+    near_miss: >
+      If the information WAS shared but the recipient ignored it, that is FM-2.5
+      (Ignored Other Agent's Input), not withholding.
+    confused_with: [FM-2.5]
+
+  - id: FM-2.5
+    name: "Ignored Other Agent's Input"
+    category: FC2
+    operational_definition: >
+      An agent disregards or fails to incorporate a relevant contribution another
+      agent explicitly provided.
+    signals:
+      - "A correction from another agent is not acted on"
+      - "Provided information is present in context but unused"
+    positive_example: >
+      The reviewer flags an off-by-one bug; the coder acknowledges it but ships the
+      unchanged code anyway.
+    near_miss: >
+      If the information was never actually communicated, it's FM-2.4
+      (Information Withholding), not ignoring.
+    confused_with: [FM-2.4, FM-3.3]
+
+  - id: FM-2.6
+    name: "Reasoning-Action Mismatch"
+    category: FC2
+    operational_definition: >
+      An agent's stated reasoning and its actual action diverge — it concludes one
+      thing and then does another.
+    signals:
+      - "Chain-of-thought says X; the tool call / output does not-X"
+      - "The agent states the correct plan, then executes a different one"
+    positive_example: >
+      The agent reasons 'I should call search_docs with the 2.0 filter', then calls
+      it with no filter and proceeds on stale results.
+    near_miss: >
+      If the reasoning itself is simply wrong but the action faithfully follows it,
+      that is a reasoning-quality issue, not a mismatch.
+    confused_with: [FM-1.1]
+
+  # ------------------------- FC3: Verification & Termination ---------------------
+  - id: FM-3.1
+    name: "Premature Termination"
+    category: FC3
+    operational_definition: >
+      The system ends before the task is actually complete — required work is left
+      undone at the point of stopping.
+    signals:
+      - "The run stops with subtasks still open"
+      - "A 'done' is declared while the goal is demonstrably unmet"
+    positive_example: >
+      The planner marks the task complete after code is written but before any test
+      is run, leaving the deliverable unverified and incomplete.
+    near_miss: >
+      Looping PAST completion is FM-1.5 (Unaware of Stopping Conditions). FM-3.1 is
+      stopping too early. A run ending because a fixed pipeline or harness reached its
+      last scripted step is NOT premature termination — FM-3.1 requires an AGENT
+      declaring completion (or the system choosing to stop) while work remains, not
+      merely running out of scripted turns.
+    confused_with: [FM-1.5, FM-3.2]
+
+  - id: FM-3.2
+    name: "No or Incomplete Verification"
+    category: FC3
+    operational_definition: >
+      Output or results are not checked, or checked only partially, so errors pass
+      through unexamined.
+    signals:
+      - "No agent tests, validates, or reviews the result"
+      - "Only a subset of outputs/requirements is checked"
+    positive_example: >
+      Code is produced and accepted with no tests written or executed at all.
+    near_miss: >
+      If verification DID happen but reached the wrong conclusion, that is FM-3.3
+      (Incorrect Verification), not absence of verification.
+    confused_with: [FM-3.1, FM-3.3]
+
+  - id: FM-3.3
+    name: "Incorrect Verification"
+    category: FC3
+    operational_definition: >
+      Verification is performed but is itself wrong — it validates a faulty result
+      or rejects a correct one.
+    signals:
+      - "Tests pass on buggy code (wrong or vacuous tests)"
+      - "A correct result is wrongly rejected and redone"
+    positive_example: >
+      The tester writes a test that asserts the buggy behavior, sees it pass, and
+      certifies the broken function as correct.
+    near_miss: >
+      No checking at all is FM-3.2. FM-3.3 requires that verification occurred but
+      gave the wrong verdict.
+    confused_with: [FM-3.2, FM-2.5]
