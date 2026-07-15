@@ -1,0 +1,15 @@
+{
+  "trace_id": "example-0001",
+  "framework": "handcrafted",
+  "task": "Write and test a function that returns the nth Fibonacci number.",
+  "spans": [
+    {"span_id": "s1", "agent": "planner", "role": "assistant", "kind": "message",
+     "content": "Plan: (1) coder writes fib(n); (2) tester writes and runs tests."},
+    {"span_id": "s2", "parent_id": "s1", "agent": "coder", "role": "assistant", "kind": "message",
+     "content": "def fib(n): return n if n < 2 else fib(n-1)+fib(n-2)"},
+    {"span_id": "s3", "parent_id": "s2", "agent": "coder", "role": "assistant", "kind": "handoff",
+     "content": "Done. Handing off to tester."},
+    {"span_id": "s4", "parent_id": "s3", "agent": "planner", "role": "assistant", "kind": "message",
+     "content": "Looks good, marking the task complete."}
+  ]
+}

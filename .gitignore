@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.*
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+# never commit real traces or judge outputs with customer data
+scratch/
+traces_private/
+# fetched research datasets (see scripts/fetch_mast_data.py) — public but large, kept out of git
+data/

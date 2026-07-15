@@ -1,0 +1,32 @@
+[project]
+name = "mastlint"
+version = "0.1.0"
+description = "A linter for multi-agent LLM traces. Classifies failures against the MAST taxonomy."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Ashish Joy" }]
+keywords = ["llm", "agents", "multi-agent", "evaluation", "observability", "mast"]
+dependencies = [
+  "pydantic>=2.6",
+  "pyyaml>=6.0",
+  "typer>=0.12",     # CLI
+  "rich>=13.7",      # pretty reports
+]
+
+[project.optional-dependencies]
+# Provider decided in Step 3: Anthropic Claude, behind the JudgeClient protocol.
+# Floor is 0.116: verified to accept `thinking` + `output_config` on messages.create
+# (adaptive thinking + structured outputs), which the judge relies on.
+llm = ["anthropic>=0.116"]
+dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
+
+[project.scripts]
+mast-lint = "mastlint.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
