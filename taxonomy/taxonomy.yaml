@@ -264,10 +264,7 @@ failure_modes:
       is run, leaving the deliverable unverified and incomplete.
     near_miss: >
       Looping PAST completion is FM-1.5 (Unaware of Stopping Conditions). FM-3.1 is
-      stopping too early. A run ending because a fixed pipeline or harness reached its
-      last scripted step is NOT premature termination — FM-3.1 requires an AGENT
-      declaring completion (or the system choosing to stop) while work remains, not
-      merely running out of scripted turns.
+      stopping too early.
     confused_with: [FM-1.5, FM-3.2]
 
   - id: FM-3.2
