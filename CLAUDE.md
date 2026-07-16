@@ -37,23 +37,40 @@ The flow is deliberately small:
   to where in the trace it happened. A judge that "feels" a failure but can't point
   to spans is a bug, not a finding.
 
-## Current state (Step 1 complete)
-Scaffold + taxonomy + schema exist. Judge, segmenter, report renderer, and the
-LangGraph adapter are **stubs with `NotImplementedError` and `TODO(step3)`**.
-`mast-lint modes` already works (lists the 14 modes). `mast-lint lint` parses a
-trace and returns an empty report until the judge is wired.
+## Current state (Step 4 in progress — held-out validation)
+Scaffold, taxonomy, schema, judge, segmenter (v0: whole-trace-as-one-window, see
+`segment.py`), report renderer, and the MAST/MAD dataset adapter (`adapters/mast.py`
+— NOT LangGraph; that framework was never built) all exist and work. `mast-lint
+lint` runs the real judge end-to-end. `mast-lint lint examples/trace.example.json`
+surfacing FM-3.1 + FM-3.2 is verified at the plumbing level offline
+(`tests/test_judge.py::test_judge_trace_surfaces_known_example_labels`, faked
+judge) — not yet re-verified against a live judge call.
+
+Step 4's original plan (hand-label 30–50 traces in `evals/labeled/`, κ vs the
+paper's 0.88) was corrected via `/office-hours` on 2026-07-14 — the paper already
+ships a validated annotator and 0.88 is inter-*human* agreement, not a κ-vs-0.88
+comparison mast-lint can win. Ground truth now comes from the MAD human-labelled
+dataset (19 records) instead; see `evals/README.md`. A 2026-07-16 status
+check-in found the taxonomy-tuning cycles had been validated against the same
+traces that shaped them — `taxonomy.yaml` is now frozen against a genuinely
+held-out set (`evals/held_out.md`). Current honest number: κ ≈ 0.37 (95% CI
+[-0.10, 0.71]) on 4 properly-segmented held-out traces across two independent
+frameworks — real signal, nowhere near publishable (n far too small; the
+19-record dataset is close to exhausted). Full trail: `evals/held_out.md`.
 
 ## Roadmap (build in this order)
 1. **[done] Step 1** — taxonomy.yaml, schema, scaffold, example trace.
-2. **Step 2** — pick ONE source framework (most public traces) and write its
-   adapter into `Trace`. Don't do all frameworks; do one end-to-end.
-3. **Step 3** — implement `judge.py` (LLM-as-judge over `render_system_prompt()`),
-   `segment.py`, and `report.py`. Get `mast-lint lint examples/trace.example.json`
-   to correctly surface FM-3.1 + FM-3.2.
-4. **Step 4 (the credibility moat)** — hand-label 30–50 real traces in
-   `evals/labeled/`, measure the judge's Cohen's κ vs. your labels (human κ in the
-   paper is 0.88). Publish the number. Do not skip this; it's the whole reason a
-   neutral tool gets trusted.
+2. **[done] Step 2** — adapter into `Trace` for the MAST/MAD dataset, covering
+   AG2, MetaGPT, ChatDev, HyperAgent, AppWorld, and Magentic-One-shaped GAIA
+   traces (`adapters/mast.py`). Went further than "one framework" because the
+   credibility-moat work in Step 4 needed several for a held-out split.
+3. **[done, plumbing-level] Step 3** — `judge.py`, `segment.py` (v0), `report.py`
+   implemented; `examples/trace.example.json` regression case passes offline
+   (see above).
+4. **Step 4 (the credibility moat), in progress** — see "Current state" above.
+   Remaining: a proper contamination-ceiling writeup, and either more
+   segmented-framework parsers or (better signal per unit effort) fresh
+   dogfooded traces — the 19-record MAD set is close to exhausted.
 5. **Step 5** — dogfood on real agent-loop runs; the results become the launch essay.
 
 ## Conventions
