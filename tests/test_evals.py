@@ -192,3 +192,86 @@ def test_sweep_thresholds_returns_one_report_per_tau():
     # FP present at τ=0, gone at τ=0.5.
     assert reports[0].overall.fp == 1
     assert reports[1].overall.fp == 0
+
+
+# --------------------------------------------------------------------------- #
+# Multi-run aggregation
+# --------------------------------------------------------------------------- #
+def _gold(trace_id: str, present: dict[str, bool]) -> mast.MASTGold:
+    return mast.MASTGold(
+        trace_id=trace_id, mas_name="AG2", benchmark="B", round="Round 1",
+        taxonomy_version="v1", n_annotators=3, present=present,
+    )
+
+
+def test_aggregate_runs_mean_and_spread():
+    gold = _gold("t1", {"FM-1.5": True, "FM-1.1": False})
+    # run A: perfect (κ=1); run B: fires spurious FM-1.1 (κ<1). Mean sits between.
+    run_a = [(_report("t1", ["FM-1.5"]), gold)]
+    run_b = [(_report("t1", ["FM-1.5", "FM-1.1"]), gold)]
+    agg = evals.aggregate_runs([run_a, run_b])
+    assert agg.n_runs == 2
+    assert agg.per_run_kappa[0] == 1.0
+    assert agg.max_kappa == 1.0
+    assert agg.min_kappa < 1.0
+    assert agg.min_kappa <= agg.mean_kappa <= agg.max_kappa
+    assert agg.std_kappa is not None and agg.std_kappa > 0
+
+
+def test_aggregate_runs_flags_unstable_cells():
+    gold = _gold("t1", {"FM-1.5": True, "FM-1.1": False})
+    # FM-1.5 fires in both runs (stable); FM-1.1 fires in only one (unstable).
+    run_a = [(_report("t1", ["FM-1.5"]), gold)]
+    run_b = [(_report("t1", ["FM-1.5", "FM-1.1"]), gold)]
+    agg = evals.aggregate_runs([run_a, run_b])
+    assert agg.unstable_cells == ["t1/FM-1.1 (1/2)"]
+
+
+def test_aggregate_runs_all_stable_has_no_unstable_cells():
+    gold = _gold("t1", {"FM-1.5": True})
+    run = [(_report("t1", ["FM-1.5"]), gold)]
+    agg = evals.aggregate_runs([run, run, run])
+    assert agg.unstable_cells == []
+    assert agg.std_kappa == 0.0
+
+
+def test_aggregate_runs_empty_raises():
+    import pytest
+
+    with pytest.raises(ValueError):
+        evals.aggregate_runs([])
+
+
+# --------------------------------------------------------------------------- #
+# Baseline-vs-new diff
+# --------------------------------------------------------------------------- #
+def test_diff_runs_toward_and_away():
+    gold = _gold("t1", {"FM-1.5": True, "FM-1.1": False, "FM-2.5": True})
+    # baseline: fires FM-1.1 (FP) and FM-2.5 (TP), misses FM-1.5 (FN).
+    baseline = [(_report("t1", ["FM-1.1", "FM-2.5"]), gold)]
+    # new: drops FM-1.1 (removed FP -> toward), adds FM-1.5 (fixed FN -> toward),
+    #      drops FM-2.5 (lost a TP -> away). FM-2.5 unchanged? no, it flipped.
+    new = [(_report("t1", ["FM-1.5"]), gold)]
+    changes = evals.diff_runs(baseline, new)
+    by_mode = {c.mode: c for c in changes}
+    assert by_mode["FM-1.1"].verdict == "toward_gold"   # FP removed
+    assert by_mode["FM-1.5"].verdict == "toward_gold"   # FN fixed
+    assert by_mode["FM-2.5"].verdict == "away_from_gold"  # TP lost
+    assert by_mode["FM-1.1"].baseline_fired and not by_mode["FM-1.1"].new_fired
+
+
+def test_diff_runs_unchanged_cells_omitted():
+    gold = _gold("t1", {"FM-1.5": True, "FM-1.1": False})
+    # identical fired sets -> no changes at all.
+    same = [(_report("t1", ["FM-1.5"]), gold)]
+    assert evals.diff_runs(same, [(_report("t1", ["FM-1.5"]), gold)]) == []
+
+
+def test_diff_runs_skips_traces_absent_from_baseline():
+    gold1 = _gold("t1", {"FM-1.5": True})
+    gold2 = _gold("t2", {"FM-1.5": True})
+    baseline = [(_report("t1", []), gold1)]
+    new = [(_report("t1", ["FM-1.5"]), gold1), (_report("t2", ["FM-1.5"]), gold2)]
+    changes = evals.diff_runs(baseline, new)
+    # t2 has no baseline to diff against -> only t1's flip is reported.
+    assert [c.trace_id for c in changes] == ["t1"]

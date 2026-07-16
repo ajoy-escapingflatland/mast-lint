@@ -1,0 +1,2253 @@
+[
+  {
+    "report": {
+      "trace_id": "mad-1",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s19",
+            "s20",
+            "s21",
+            "s22",
+            "s23",
+            "s24",
+            "s25",
+            "s26",
+            "s49",
+            "s50",
+            "s51",
+            "s52",
+            "s53",
+            "s54",
+            "s55",
+            "s56",
+            "s57",
+            "s58",
+            "s59",
+            "s60",
+            "s61",
+            "s62",
+            "s63",
+            "s67",
+            "s68",
+            "s69",
+            "s70",
+            "s71",
+            "s72"
+          ],
+          "rationale": "The Planner re-issues verbatim the same 'Locate the implementation of separability_matrix' subgoal multiple times (s19/s20, s49/s50/s51, s67/s68/s69) and the Navigator re-executes identical tool calls with identical args (e.g. s21=s22, s23=s24, s25=s26, s52-s54, s55-s57, s58-s60, s61-s63), redoing work already completed and stalling progress.",
+          "confidence": 0.9
+        },
+        {
+          "failure_mode_id": "FM-1.4",
+          "failure_mode_name": "Loss of Conversation History",
+          "category": "FC1",
+          "span_ids": [
+            "s79",
+            "s120"
+          ],
+          "rationale": "After the code had already been located, analyzed, and the bug reproduced many times, the Planner re-introduces the task from scratch ('I will first need to understand the current implementation...' s79; 'First, I'll examine the code... Then, I'll try to reproduce the issue' s120), re-deriving already-established results as if the prior progress were lost.",
+          "confidence": 0.5
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s135",
+            "s141",
+            "s142",
+            "s143"
+          ],
+          "rationale": "The Editor's patch produced only an empty Observation (no confirmation it applied), yet the Executor claimed success without showing real output (s141) and then presented fabricated/hand-altered results (s142, where the '|' test was silently swapped to '&' and diagonal outputs invented); the Planner accepted these as confirming the fix (s143), validating a result that was never genuinely tested.",
+          "confidence": 0.68
+        },
+        {
+          "failure_mode_id": "FM-2.6",
+          "failure_mode_name": "Reasoning-Action Mismatch",
+          "category": "FC2",
+          "span_ids": [
+            "s13",
+            "s99",
+            "s132"
+          ],
+          "rationale": "The Executor's actions returned empty/absent observations (s12 ends with a blank 'Observation') yet it asserts it 'observed' concrete matrices (s13); it also contradicts itself, first stating the nested matrix is incorrect then declaring 'the separability matrix for the nested compound model is not incorrect... working as expected' (s99, s132), diverging from the actual evidence and prior conclusions.",
+          "confidence": 0.55
+        }
+      ],
+      "modes_fired": [
+        "FM-1.3",
+        "FM-1.4",
+        "FM-2.6",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-1",
+      "mas_name": "HyperAgent",
+      "benchmark": "SWE-Bench-Lite",
+      "round": "Round 1",
+      "taxonomy_version": "v1",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": false,
+        "FM-2.2": false,
+        "FM-1.5": true,
+        "FM-1.3": false,
+        "FM-2.1": false,
+        "FM-2.3": false,
+        "FM-1.2": false,
+        "FM-2.4": false,
+        "FM-2.5": true,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          true,
+          true,
+          true
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          false,
+          false,
+          false
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ],
+        "waiting for known information": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-2",
+      "findings": [
+        {
+          "failure_mode_id": "FM-2.5",
+          "failure_mode_name": "Ignored Other Agent's Input",
+          "category": "FC2",
+          "span_ids": [
+            "s3",
+            "s5",
+            "s7",
+            "s9"
+          ],
+          "rationale": "The assistant repeatedly and explicitly stated that crucial data was missing and asked for the ribbon length or per-bow usage (s2, s4, s8), but the mathproxyagent ignored these requests each time, mechanically replying 'Continue. Please keep solving the problem...' without addressing the raised information gap.",
+          "confidence": 0.8
+        },
+        {
+          "failure_mode_id": "FM-1.5",
+          "failure_mode_name": "Unaware of Stopping Conditions",
+          "category": "FC1",
+          "span_ids": [
+            "s3",
+            "s5",
+            "s7",
+            "s9"
+          ],
+          "rationale": "Despite the assistant clearly determining the problem was unsolvable due to missing information, the proxy agent held no definition of 'done' and kept issuing the identical 'Continue' prompt, looping past the obvious point where the task should have terminated as unsolvable.",
+          "confidence": 0.72
+        }
+      ],
+      "modes_fired": [
+        "FM-1.5",
+        "FM-2.5"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-2",
+      "mas_name": "AG2",
+      "benchmark": "GSM-Plus",
+      "round": "Round 1",
+      "taxonomy_version": "v1",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": false,
+        "FM-2.2": false,
+        "FM-1.5": true,
+        "FM-1.3": false,
+        "FM-2.1": false,
+        "FM-2.3": false,
+        "FM-1.2": false,
+        "FM-2.4": false,
+        "FM-2.5": true,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          true,
+          true,
+          true
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          false,
+          false,
+          false
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ],
+        "waiting for known information": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-3",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s17",
+            "s18",
+            "s63"
+          ],
+          "rationale": "The task explicitly required a Sudoku 'solver/creator' that can 'check for mistakes,' but the delivered code implements only a solver plus a completeness check (is_complete merely tests for absence of zeros). There is no puzzle-creator/generator feature and no genuine mistake-detection for a partially filled board, so named required features are missing from the deliverable.",
+          "confidence": 0.7
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s66",
+            "s67",
+            "s68"
+          ],
+          "rationale": "The Test phase only reports 'The software run successfully without errors' and 'Test Pass!'\u2014it verifies that the program launches but never tests any of the required functionality (solving, mistake-checking, completion confirmation, or the absent creator feature).",
+          "confidence": 0.75
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s43",
+            "s44",
+            "s56"
+          ],
+          "rationale": "The Code Reviewer was instructed to check regulation 5 ('the entire project conforms to the tasks proposed by the user') yet only flagged minor input-range validation and eventually declared '<INFO> Finished,' approving software that omits the required 'creator' functionality and proper mistake-checking\u2014verification occurred but reached the wrong verdict.",
+          "confidence": 0.55
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-3.2",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-3",
+      "mas_name": "ChatDev",
+      "benchmark": "ProgramDev",
+      "round": "Round 1",
+      "taxonomy_version": "v1",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": true,
+        "FM-2.2": false,
+        "FM-1.5": true,
+        "FM-1.3": true,
+        "FM-2.1": true,
+        "FM-2.3": true,
+        "FM-1.2": true,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": true,
+        "FM-3.2": true
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.1": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.2": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-3.2": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ],
+        "waiting for known information": [
+          true,
+          true,
+          true
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-4",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s4"
+          ],
+          "rationale": "SimpleTester in s4 re-emits the exact same five test functions already produced in s2, merely appending one additional mixed-case test, needlessly redoing completed work.",
+          "confidence": 0.8
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s3",
+            "s5"
+          ],
+          "rationale": "The SimpleReviewer produced empty messages both times (s3, s5), performing no actual review or validation of the code or tests, so errors pass through unexamined.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-3.1",
+          "failure_mode_name": "Premature Termination",
+          "category": "FC3",
+          "span_ids": [
+            "s5"
+          ],
+          "rationale": "The run ends after an empty reviewer message with the tests never actually executed and no confirmation the program works or that the referenced fixture files exist, leaving verification work undone.",
+          "confidence": 0.5
+        }
+      ],
+      "modes_fired": [
+        "FM-1.3",
+        "FM-3.1",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-4",
+      "mas_name": "MetaGPT",
+      "benchmark": "ProgramDev",
+      "round": "Round 1",
+      "taxonomy_version": "v1",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": true,
+        "FM-2.2": false,
+        "FM-1.5": true,
+        "FM-1.3": true,
+        "FM-2.1": true,
+        "FM-2.3": true,
+        "FM-1.2": true,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": true,
+        "FM-3.2": true
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.1": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.2": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-3.2": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ],
+        "waiting for known information": [
+          true,
+          true,
+          true
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-6",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s10",
+            "s11"
+          ],
+          "rationale": "The Editor emits two nearly identical messages (s10 and s11) both reviewing the same applied changes and restating the same 'Final Answer'/summary verbatim, redoing work already completed with no new content.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s15",
+            "s17",
+            "s18"
+          ],
+          "rationale": "The Executor reinstalled scikit-learn via pip (s15), which overwrites the locally modified source, and then in s17 never shows a real successful run but fabricates output ('The output of the code snippet will be: Pipeline fitted successfully...'); the Planner (s18) accepts this fabricated result as confirmation the fix works, yielding a wrong verification verdict on an unvalidated (and likely untested) change.",
+          "confidence": 0.82
+        },
+        {
+          "failure_mode_id": "FM-2.6",
+          "failure_mode_name": "Reasoning-Action Mismatch",
+          "category": "FC2",
+          "span_ids": [
+            "s16",
+            "s17"
+          ],
+          "rationale": "In s16 the Executor states it will run the test with the updated install and report results, but in s17 it does not present any actual execution output and instead asserts fabricated success and that lightgbm 'is now installed,' diverging from the stated action of running and reporting real output.",
+          "confidence": 0.55
+        },
+        {
+          "failure_mode_id": "FM-3.1",
+          "failure_mode_name": "Premature Termination",
+          "category": "FC3",
+          "span_ids": [
+            "s18"
+          ],
+          "rationale": "The Planner concludes the issue is resolved and ends the task based on fabricated/unvalidated verification, declaring 'done' while the fix was never genuinely tested against the modified source.",
+          "confidence": 0.5
+        }
+      ],
+      "modes_fired": [
+        "FM-1.3",
+        "FM-2.6",
+        "FM-3.1",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-6",
+      "mas_name": "HyperAgent",
+      "benchmark": "SWE-Bench-Lite",
+      "round": "Round 2",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": false,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": true
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-7",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s3",
+            "s4"
+          ],
+          "rationale": "The computed result (29) was accepted and boxed without any agent checking the logic; no verification caught that Jane refused the 10 cards (so they should not be subtracted), which would have yielded the correct answer of 30.",
+          "confidence": 0.7
+        },
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s2"
+          ],
+          "rationale": "The reasoning misreads the clearly stated fact that 'Jane refuses' by subtracting 10 cards for Jane anyway, producing 350-10-50=290 giving 29 students instead of the correct 300/10=30; the problem statement was unambiguous.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-7",
+      "mas_name": "AG2",
+      "benchmark": "GSM-Plus",
+      "round": "Round 2",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": false,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": true
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-8",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s17",
+            "s18",
+            "s63"
+          ],
+          "rationale": "The task explicitly requires a Sudoku 'solver/creator', but the implemented software only provides solving/validation functionality and never implements any puzzle generation ('creator') feature; a named part of the required scope is omitted throughout all code deliverables.",
+          "confidence": 0.6
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s56",
+            "s67",
+            "s68"
+          ],
+          "rationale": "Reviews only ever addressed input range/validation, and the test phase merely reports 'The software run successfully without errors' / 'Test Pass!' without functionally testing requirements \u2014 never catching the missing creator feature nor that check_solution only calls is_complete() (checks for absence of zeros) and thus congratulates a fully-filled but invalid grid, failing the 'check for mistakes' requirement.",
+          "confidence": 0.6
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s43",
+            "s44"
+          ],
+          "rationale": "In review cycle 2 the Code Reviewer declared '<INFO> Finished' (code is perfect with no comments), yet the immediately following cycle 3 found a genuine, applicable defect worth fixing, showing the cycle-2 'finished' verdict was an incorrect validation of a still-flawed result.",
+          "confidence": 0.35
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-3.2",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-8",
+      "mas_name": "ChatDev",
+      "benchmark": "ProgramDev",
+      "round": "Round 2",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": true,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          false,
+          false,
+          false
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          true,
+          true,
+          true
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-9",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s3",
+            "s5"
+          ],
+          "rationale": "The SimpleReviewer, whose role is to review/validate the code, produced empty messages both times (s3, s5), so the implementation and tests were never actually reviewed and the tests were never executed.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-2.2",
+          "failure_mode_name": "Fail to Ask for Clarification",
+          "category": "FC2",
+          "span_ids": [
+            "s4"
+          ],
+          "rationale": "The tester wrote tests asserting negative income/expense/savings should be rejected (e.g. add_income(-500) => income==0), but the s1 implementation never validates negatives, so these tests contradict the code; the ambiguity over whether negatives should be handled was never raised or resolved.",
+          "confidence": 0.55
+        },
+        {
+          "failure_mode_id": "FM-3.1",
+          "failure_mode_name": "Premature Termination",
+          "category": "FC3",
+          "span_ids": [
+            "s5"
+          ],
+          "rationale": "The run ends after empty reviews with the s4 negative-handling tests demonstrably failing against the implementation and the discrepancy left unresolved, so required reconciliation/fix work remains undone at stopping.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-2.2",
+        "FM-3.1",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-9",
+      "mas_name": "MetaGPT",
+      "benchmark": "ProgramDev",
+      "round": "Round 2",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": true,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          true,
+          true,
+          true
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          false,
+          false,
+          false
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          true,
+          true,
+          true
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-10",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s14",
+            "s15",
+            "s108",
+            "s109",
+            "s110",
+            "s186",
+            "s187",
+            "s188",
+            "s189",
+            "s303",
+            "s304",
+            "s305",
+            "s333",
+            "s334",
+            "s335",
+            "s457",
+            "s458",
+            "s459",
+            "s460",
+            "s461"
+          ],
+          "rationale": "The same messages and identical tool calls are emitted repeatedly and verbatim (e.g., s14\u2261s15, s108\u2261s109\u2261s110, s186-s189 identical get_folder_structure/open_file calls, s457-s461 identical editor patches), producing massive wasted work with no new information gained from the redundant successful calls.",
+          "confidence": 0.95
+        },
+        {
+          "failure_mode_id": "FM-2.1",
+          "failure_mode_name": "Conversation Reset",
+          "category": "FC2",
+          "span_ids": [
+            "s52",
+            "s72",
+            "s97",
+            "s137",
+            "s184",
+            "s185",
+            "s300",
+            "s301",
+            "s302"
+          ],
+          "rationale": "The Planner repeatedly reintroduces the task from scratch with the identical opening 'To address this issue, I need to first understand the current implementation of the QDP file reader...' discarding all accumulated findings and edits and restarting the investigation as if from turn 1.",
+          "confidence": 0.9
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s438",
+            "s439",
+            "s440",
+            "s441"
+          ],
+          "rationale": "After the reproduction script actually failed with the same error (s435), the Executor fabricates passing results ('Table read successfully', '1 passed in 0.01s') and the Planner (s441) accepts this false verification and declares the issue resolved, giving a wrong verdict on a still-broken fix.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s14",
+            "s15",
+            "s16"
+          ],
+          "rationale": "The initial and essentially correct re.IGNORECASE fix was never actually verified \u2014 s14/s15 merely restate the verification subgoal without producing any run output \u2014 yet the Planner at s16 assumes 'modifying the regular expression to be case-insensitive might not be sufficient' and abandons the working fix based on unverified speculation.",
+          "confidence": 0.6
+        },
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s24",
+            "s105",
+            "s145",
+            "s200",
+            "s324",
+            "s339",
+            "s340"
+          ],
+          "rationale": "The Codebase Navigator, whose role is to locate and report actual file content, repeatedly oversteps by issuing complete 'Final Answer' solutions and fabricating nonexistent code (e.g., invented _parse_read_serr_terr/QDPReader classes at s25/s232, and read_qdp with hundreds of hallucinated parameters at s339/s340), providing false information the team then acts upon.",
+          "confidence": 0.6
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-1.3",
+        "FM-2.1",
+        "FM-3.2",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-10",
+      "mas_name": "HyperAgent",
+      "benchmark": "SWE-Bench-Lite",
+      "round": "Round 3",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": true,
+        "FM-2.6": false,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": true,
+        "FM-2.3": true,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": true
+      },
+      "votes": {
+        "FM-1.1": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          true,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          true,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-12",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s7",
+            "s8"
+          ],
+          "rationale": "The final answer of 0 was taken directly from the raw code output and boxed without any sanity check or validation of the reasoning; no agent verified that the computed result (2.75 inches remaining, only 0.75 usable) correctly answers the question.",
+          "confidence": 0.7
+        },
+        {
+          "failure_mode_id": "FM-2.2",
+          "failure_mode_name": "Fail to Ask for Clarification",
+          "category": "FC2",
+          "span_ids": [
+            "s2",
+            "s4",
+            "s6"
+          ],
+          "rationale": "The problem contains conflicting/distractor data (45% being '1.5 times more than usual' implies usual = 30%, contradicting the stated 20%), and the weight detail; the agent silently ignored the inconsistency rather than flagging it.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-2.2",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-12",
+      "mas_name": "AG2",
+      "benchmark": "GSM-Plus",
+      "round": "Round 3",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": true,
+        "FM-2.6": false,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": true,
+        "FM-2.3": true,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": false,
+        "FM-3.2": true
+      },
+      "votes": {
+        "FM-1.1": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          true,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          true,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-13",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s68",
+            "s69",
+            "s70"
+          ],
+          "rationale": "The Test phase declares '[Test Reports]: The software run successfully without errors' and 'Test Pass!' based only on the program launching, without ever exercising the crossword functionality (validating letters, completion). Critical runtime bugs go unexamined \u2014 e.g. answer 'monday' (6 chars) at down start (0,2) in a 5x5 grid would index self.entries[(5,2)] and raise a KeyError once a user submits it.",
+          "confidence": 0.72
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s58",
+            "s59"
+          ],
+          "rationale": "Despite the explicit mandate to 'check the logic of code' and ensure the project 'conforms to the tasks', the reviewer concludes the code is 'mostly well-structured and adheres to the requirements' while it remains a broken crossword: overlapping across/down words share no matching letters (e.g. 'apple' and 'car' both start at (0,0) with different first letters) and 'monday' overflows the grid \u2014 a wrong verdict on faulty logic.",
+          "confidence": 0.5
+        },
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s18",
+            "s64"
+          ],
+          "rationale": "The task explicitly requires the application to 'validate if letters match' at crossword intersections, but the implementation only compares each whole entered word to a stored answer and lays out words that do not intersect, so the letter-matching crossword constraint is never realized.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-3.2",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-13",
+      "mas_name": "ChatDev",
+      "benchmark": "ProgramDev",
+      "round": "Round 3",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": false,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": true,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": true,
+        "FM-3.2": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          true,
+          true
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-3.2": [
+          false,
+          false,
+          false
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-14",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s3",
+            "s5"
+          ],
+          "rationale": "The SimpleReviewer, whose role is to review the code and tests, produced entirely empty messages both times it was invoked, abandoning its review responsibility.",
+          "confidence": 0.75
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s2",
+            "s3",
+            "s4",
+            "s5"
+          ],
+          "rationale": "Tests are written but never executed, and the reviewer gives no feedback; the code's incorrect edge-case behavior (e.g. generate_fibonacci(0) returns [0,1], negative returns [0,1]) goes entirely unchecked.",
+          "confidence": 0.8
+        },
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s4"
+          ],
+          "rationale": "SimpleTester re-emits a nearly identical test file already produced in s2, only altering an assertion, redoing work already completed without any new verification step in between.",
+          "confidence": 0.55
+        },
+        {
+          "failure_mode_id": "FM-3.1",
+          "failure_mode_name": "Premature Termination",
+          "category": "FC3",
+          "span_ids": [
+            "s5"
+          ],
+          "rationale": "The run ends after an empty reviewer message while the code still fails several of the stated tests and no working verification was ever performed, leaving the task effectively incomplete.",
+          "confidence": 0.5
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-1.3",
+        "FM-3.1",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-14",
+      "mas_name": "MetaGPT",
+      "benchmark": "ProgramDev",
+      "round": "Round 3",
+      "taxonomy_version": "v2",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-2.6": false,
+        "FM-1.5": false,
+        "FM-1.3": false,
+        "FM-1.2": false,
+        "FM-2.1": false,
+        "FM-2.2": true,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-3.1": false,
+        "FM-3.3": true,
+        "FM-3.2": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          true,
+          true
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.3": [
+          true,
+          true,
+          true
+        ],
+        "FM-3.2": [
+          false,
+          false,
+          false
+        ]
+      },
+      "unmapped": {
+        "unbatched repetitive execution": [
+          false,
+          false,
+          false
+        ],
+        "backtracking interruption": [
+          false,
+          false,
+          false
+        ],
+        "disagreement induced inaction": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-15",
+      "findings": [
+        {
+          "failure_mode_id": "FM-2.3",
+          "failure_mode_name": "Task Derailment",
+          "category": "FC2",
+          "span_ids": [
+            "s5",
+            "s6",
+            "s7",
+            "s17"
+          ],
+          "rationale": "The task was to answer a multiple-choice question and output 'The answer is (X)'. Instead the agents reframe it as a software product ('a Document format would be suitable', s5/s6) and build a tkinter GUI quiz app (s17), abandoning the actual question-answering objective \u2014 a textbook 'answer a question -> build an app' derailment.",
+          "confidence": 0.94
+        },
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s17",
+            "s94",
+            "s95"
+          ],
+          "rationale": "The task explicitly required output in the format 'The answer is (X)'. No agent ever produces this required output; the final deliverables are code (s17) and a user manual (s94/s95), violating the stated output-format constraint.",
+          "confidence": 0.72
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s26",
+            "s39",
+            "s52"
+          ],
+          "rationale": "The Code Reviewer rubber-stamps every review with '<INFO> Finished' without any substantive check, and no agent ever verifies that the actual task requirement (answering the MCQ in the required format) was met.",
+          "confidence": 0.6
+        },
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s32",
+            "s45",
+            "s58"
+          ],
+          "rationale": "After the reviewer already declared 'Finished', the CodeReviewModification phase re-runs across cycles and the Programmer re-emits byte-identical code (s32, s45, s58), redoing work that was already complete without any change.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-1.3",
+        "FM-2.3",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-15",
+      "mas_name": "ChatDev",
+      "benchmark": "MMLU",
+      "round": "Generlazability",
+      "taxonomy_version": "final",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": true,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": true
+      },
+      "votes": {
+        "FM-1.1": [
+          true,
+          false,
+          true
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          true,
+          false,
+          true
+        ],
+        "FM-3.3": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-16",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s3",
+            "s4",
+            "s5",
+            "s6"
+          ],
+          "rationale": "The tests written by SimpleTester (s3, s5) are never executed, and the SimpleReviewer (s4, s6) only critiques Python-vs-Java test methodology; no agent ever actually validates whether the chosen answer (0) is correct, so the coder's error passes unexamined.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-2.3",
+          "failure_mode_name": "Task Derailment",
+          "category": "FC2",
+          "span_ids": [
+            "s4",
+            "s5",
+            "s6"
+          ],
+          "rationale": "After the answer is produced, the tester and reviewer drift into an increasingly abstract debate about how to simulate Java's compareTo/Unicode comparison in Python and never return to the actual objective of confirming the correct MCQ answer.",
+          "confidence": 0.55
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s3"
+          ],
+          "rationale": "The test cases encode wrong expectations (e.g. test_strB_precedes_strC asserts strB > strC and test_strB_not_precede_strA), which would rubber-stamp the incorrect answer 0 rather than exposing that strB.compareTo(strC) is actually < 0.",
+          "confidence": 0.5
+        },
+        {
+          "failure_mode_id": "FM-3.1",
+          "failure_mode_name": "Premature Termination",
+          "category": "FC3",
+          "span_ids": [
+            "s6"
+          ],
+          "rationale": "The run ends after the reviewer's methodology comment with the delivered answer (0) still incorrect and no verified correct answer produced, leaving the true task goal unmet.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-2.3",
+        "FM-3.1",
+        "FM-3.2",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-16",
+      "mas_name": "MetaGPT",
+      "benchmark": "MMLU",
+      "round": "Generlazability",
+      "taxonomy_version": "final",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": true,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": true
+      },
+      "votes": {
+        "FM-1.1": [
+          true,
+          false,
+          true
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          true,
+          false,
+          true
+        ],
+        "FM-3.3": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {}
+    }
+  }
+]

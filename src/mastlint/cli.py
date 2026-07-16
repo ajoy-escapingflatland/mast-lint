@@ -71,6 +71,11 @@ def eval_cmd(
         help="Only count a mode as fired when a finding's confidence ≥ this (trades recall "
         "for precision).",
     ),
+    runs: int = typer.Option(
+        1, "--runs", min=1,
+        help="Judge every trace N times (the judge is stochastic — no seed). With "
+        "--raw-out FILE, each run is saved to FILE with a .runK suffix for `eval-agg`.",
+    ),
     as_json: bool = typer.Option(False, "--json", help="Emit JSON instead of tables"),
 ):
     """Measure the judge's Cohen's κ against the MAST human gold labels (Step 4)."""
@@ -107,16 +112,28 @@ def eval_cmd(
         typer.echo(f"[{i + 1}/{len(pairs)}] judging {trace.trace_id} ({trace.framework})…",
                    err=True)
 
-    try:
-        results = run_judge(pairs, judge, on_trace=_progress)
-    except JudgeError as exc:
-        typer.echo(str(exc), err=True)
-        raise typer.Exit(code=1) from None
+    all_runs = []
+    for run_i in range(runs):
+        if runs > 1:
+            typer.echo(f"=== run {run_i + 1}/{runs} ===", err=True)
+        try:
+            results = run_judge(pairs, judge, on_trace=_progress)
+        except JudgeError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from None
+        all_runs.append(results)
+        if raw_out is not None:  # persist first — the paid pass is done, never lose it
+            # Single run keeps the plain name; multi-run gets a .runK suffix per pass.
+            path = raw_out if runs == 1 else raw_out.with_suffix(f".run{run_i + 1}{raw_out.suffix}")
+            save_raw_results(results, path)
+            typer.echo(f"Wrote raw findings to {path}", err=True)
 
-    if raw_out is not None:  # persist first — the paid pass is done, never lose it
-        save_raw_results(results, raw_out)
-        typer.echo(f"Wrote raw findings to {raw_out}", err=True)
+    if runs > 1:
+        from .evals import aggregate_runs, print_aggregate
 
+        print_aggregate(aggregate_runs(all_runs, threshold=confidence_threshold))
+
+    results = all_runs[0]
     report = score(results, threshold=confidence_threshold)
 
     if out is not None:
@@ -141,6 +158,44 @@ def eval_sweep(
     results = load_raw_results(raw_in)
     thresholds = [i / (steps - 1) for i in range(steps)] if steps > 1 else [0.0]
     print_sweep(sweep_thresholds(results, thresholds))
+
+
+@app.command("eval-agg")
+def eval_agg(
+    raw_in: list[Path] = typer.Argument(
+        ..., help="Two or more raw-findings JSONs (one per judge run) from `eval --raw-out`"
+    ),
+    confidence_threshold: float = typer.Option(
+        0.0, "--confidence-threshold", min=0.0, max=1.0,
+        help="Min finding confidence to count a mode as fired.",
+    ),
+):
+    """Aggregate κ across N saved judge runs (offline, no API): mean ± spread and the
+    unstable cells that drive run-to-run variance. Use for a stable published κ."""
+    from .evals import aggregate_runs, load_raw_results, print_aggregate
+
+    runs = [load_raw_results(p) for p in raw_in]
+    print_aggregate(aggregate_runs(runs, threshold=confidence_threshold))
+
+
+@app.command("eval-diff")
+def eval_diff(
+    baseline: Path = typer.Argument(..., help="Raw findings from the pre-change judge run"),
+    new: Path = typer.Argument(..., help="Raw findings from the post-change judge run"),
+    confidence_threshold: float = typer.Option(
+        0.0, "--confidence-threshold", min=0.0, max=1.0,
+        help="Min finding confidence to count a mode as fired.",
+    ),
+):
+    """Diff two saved judge runs (offline, no API): the (trace, mode) cells whose
+    fired-status flipped, tagged toward/away from the human gold. After a taxonomy edit,
+    only these cells need re-adjudication — the rest keep their prior verdict."""
+    from .evals import diff_runs, load_raw_results, print_diff
+
+    changes = diff_runs(
+        load_raw_results(baseline), load_raw_results(new), threshold=confidence_threshold
+    )
+    print_diff(changes)
 
 
 @app.command()

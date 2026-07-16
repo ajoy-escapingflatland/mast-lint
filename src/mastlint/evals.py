@@ -258,6 +258,178 @@ def sweep_thresholds(
     return [score(results, threshold=t) for t in thresholds]
 
 
+# --------------------------------------------------------------------------- #
+# Multi-run aggregation — the judge is stochastic (adaptive thinking, no seed),
+# so a single run's κ is one draw. Run N times and report the distribution.
+# --------------------------------------------------------------------------- #
+class AggregateReport(BaseModel):
+    """κ across N judge runs on the same traces, plus which cells drive the variance."""
+
+    n_runs: int
+    per_run_kappa: list[float | None]
+    mean_kappa: float | None
+    std_kappa: float | None
+    min_kappa: float | None
+    max_kappa: float | None
+    mean_precision: float | None
+    mean_recall: float | None
+    unstable_cells: list[str] = Field(
+        default_factory=list,
+        description="'trace_id/FM-id (k/N)' cells the judge fired in some but not all runs "
+        "— the source of the run-to-run κ swing.",
+    )
+
+
+def _mean(xs: list[float]) -> float | None:
+    return sum(xs) / len(xs) if xs else None
+
+
+def _std(xs: list[float]) -> float | None:
+    if len(xs) < 2:
+        return 0.0 if xs else None
+    m = sum(xs) / len(xs)
+    return (sum((x - m) ** 2 for x in xs) / len(xs)) ** 0.5
+
+
+def aggregate_runs(
+    runs: list[list[tuple[Report, MASTGold]]], *, threshold: float = 0.0
+) -> AggregateReport:
+    """Score each of N judge runs and summarise the κ distribution.
+
+    Every run must cover the same traces (same gold). ``unstable_cells`` lists the
+    (trace, mode) cells whose fired-status is not unanimous across runs — those, not the
+    stable ones, are what make κ wobble between runs."""
+    if not runs:
+        raise ValueError("aggregate_runs needs at least one run")
+    reports = [score(r, threshold=threshold) for r in runs]
+    kappas = [r.overall.kappa for r in reports]
+    precisions = [r.overall.precision for r in reports if r.overall.precision is not None]
+    recalls = [r.overall.recall for r in reports if r.overall.recall is not None]
+    valid_k = [k for k in kappas if k is not None]
+
+    # Count, per (trace, mode) within each trace's labelable universe, how many runs fired.
+    fire_counts: dict[tuple[str, str], int] = {}
+    for run in runs:
+        for report, gold in run:
+            fired = modes_fired_at(report, threshold)
+            for mode in gold.present:
+                fire_counts.setdefault((gold.trace_id, mode), 0)
+                if mode in fired:
+                    fire_counts[(gold.trace_id, mode)] += 1
+    n = len(runs)
+    unstable = sorted(
+        f"{tid}/{mode} ({c}/{n})"
+        for (tid, mode), c in fire_counts.items()
+        if 0 < c < n
+    )
+
+    return AggregateReport(
+        n_runs=n,
+        per_run_kappa=kappas,
+        mean_kappa=_mean(valid_k),
+        std_kappa=_std(valid_k),
+        min_kappa=min(valid_k) if valid_k else None,
+        max_kappa=max(valid_k) if valid_k else None,
+        mean_precision=_mean(precisions),
+        mean_recall=_mean(recalls),
+        unstable_cells=unstable,
+    )
+
+
+def print_aggregate(agg: AggregateReport) -> None:
+    """Terminal summary of a multi-run aggregate."""
+    ks = "  ".join(_fmt(k) for k in agg.per_run_kappa)
+    print(
+        f"\nκ over {agg.n_runs} run(s): mean {_fmt(agg.mean_kappa)} "
+        f"± {_fmt(agg.std_kappa)}  (min {_fmt(agg.min_kappa)}, max {_fmt(agg.max_kappa)})\n"
+        f"  per-run κ: {ks}\n"
+        f"  mean precision {_fmt(agg.mean_precision)}, recall {_fmt(agg.mean_recall)} "
+        f"(paper human κ = 0.88)"
+    )
+    if agg.unstable_cells:
+        print(
+            f"  {len(agg.unstable_cells)} unstable cell(s) (fired in some runs, not all) "
+            f"— the κ-swing source:"
+        )
+        for cell in agg.unstable_cells:
+            print(f"    {cell}")
+
+
+# --------------------------------------------------------------------------- #
+# Baseline-vs-new diff — after a taxonomy edit, only the CHANGED (trace, mode)
+# cells need re-adjudication. This finds them and says if the change helped.
+# --------------------------------------------------------------------------- #
+class CellChange(BaseModel):
+    """One (trace, mode) cell whose judge fired-status changed between two runs."""
+
+    trace_id: str
+    mode: str
+    gold: bool
+    baseline_fired: bool
+    new_fired: bool
+    verdict: str = Field(
+        description="toward_gold | away_from_gold — did the change move the judge "
+        "closer to or further from the human label?"
+    )
+
+
+def diff_runs(
+    baseline: list[tuple[Report, MASTGold]],
+    new: list[tuple[Report, MASTGold]],
+    *,
+    threshold: float = 0.0,
+) -> list[CellChange]:
+    """List the (trace, mode) cells whose judge fired-status flipped between ``baseline``
+    and ``new``, tagged toward/away from the human gold. Only these cells need
+    re-adjudication after a taxonomy edit — the unchanged ones keep their prior verdict.
+
+    Cells are compared within each trace's labelable universe (``gold.present``). Traces
+    absent from either run, or modes outside the universe, are skipped."""
+    base_fired = {
+        g.trace_id: (modes_fired_at(r, threshold), g) for r, g in baseline
+    }
+    changes: list[CellChange] = []
+    for report, gold in new:
+        if gold.trace_id not in base_fired:
+            continue
+        old_fired, _ = base_fired[gold.trace_id]
+        new_fired = modes_fired_at(report, threshold)
+        for mode, present in gold.present.items():
+            was, now = mode in old_fired, mode in new_fired
+            if was == now:
+                continue
+            # 'now' agrees with gold => toward; else away.
+            verdict = "toward_gold" if now == present else "away_from_gold"
+            changes.append(
+                CellChange(
+                    trace_id=gold.trace_id, mode=mode, gold=present,
+                    baseline_fired=was, new_fired=now, verdict=verdict,
+                )
+            )
+    return sorted(changes, key=lambda c: (c.trace_id, c.mode))
+
+
+def print_diff(changes: list[CellChange]) -> None:
+    """Terminal summary of a baseline-vs-new cell diff."""
+    if not changes:
+        print("No cells changed fired-status between the two runs.")
+        return
+    toward = sum(c.verdict == "toward_gold" for c in changes)
+    away = len(changes) - toward
+    print(
+        f"\n{len(changes)} changed cell(s): {toward} toward gold, {away} away from gold "
+        f"(re-adjudicate these; the rest keep their prior verdict)\n"
+    )
+    for c in changes:
+        arrow = "fired" if c.new_fired else "silent"
+        was = "fired" if c.baseline_fired else "silent"
+        flag = "✓" if c.verdict == "toward_gold" else "✗"
+        print(
+            f"  {flag} {c.trace_id}/{c.mode}: {was}→{arrow}  "
+            f"(gold={'present' if c.gold else 'absent'}, {c.verdict})"
+        )
+
+
 def print_sweep(reports: list[EvalReport]) -> None:
     """Terminal table of overall κ / precision / recall across confidence thresholds."""
     try:
