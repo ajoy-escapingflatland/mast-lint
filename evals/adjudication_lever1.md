@@ -69,9 +69,30 @@ regression roughly cancel on the lossy metric — but the *composition* matters 
 
 ## Next taxonomy actions
 1. **Keep** the FM-1.1 and FM-1.3 near_miss/confused_with edits — verified wins.
-2. **Revert or rethink** the FM-3.1 structural-end exclusion — it inverted its target.
-   FM-3.1 on MetaGPT/fixed-round harnesses may be inherently undecidable from the trace;
-   consider framework-aware handling rather than a definition tweak.
+2. **[DONE] Revert the FM-3.1 structural-end exclusion** (commit 83be667) — see verification below.
+   FM-3.1 on MetaGPT/fixed-round harnesses is inherently undecidable from the trace;
+   needs framework-aware handling rather than a definition tweak.
 3. **Rework** the FM-2.2/FM-2.3 recall edits — no stable toward-gold firing resulted.
 4. The remaining open question (did Lever-1 *cause* the mad-1/FM-2.5 drop?) needs the
    deferred baseline arm to answer cleanly.
+
+## Verification of the FM-3.1 revert (commit 83be667)
+
+A targeted 5×5 re-run of the judge over the FM-3.1-relevant traces only (mad-4/6/9/14/16;
+~25 calls) confirms the revert restored the suppressed genuine detection. FM-3.1 firing rate,
+post-revert vs with-exclusion:
+
+| trace | post-revert | with-exclusion | adjudicated truth |
+|---|---|---|---|
+| mad-16 | **4/5** | 1/5 | correct — should fire → **restored** |
+| mad-14 | 5/5 | 5/5 | wrong — still mis-fires |
+| mad-9  | 3/5 | 5/5 | wrong — still mis-fires |
+| mad-4  | 3/5 | 1/5 | — (noise) |
+| mad-6  | 0/5 | 3/5 | — (noise) |
+
+The exclusion text explicitly told the judge not to fire FM-3.1 on structural harness ends;
+mad-16 ends structurally, so it was suppressed to 1/5. Removing the text restored it to 4/5
+(a 20%→80% swing, meaningful at n=5, with a direct mechanism). The revert **stopped the
+collateral damage** but did NOT resolve the ambiguity — mad-9/mad-14 (both "wrong") keep
+firing/wobbling, reconfirming FM-3.1 is undecidable on fixed-round frameworks at the trace
+level. No prose edit fixes that; framework-aware handling is the real lever.
