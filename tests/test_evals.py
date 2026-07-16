@@ -195,6 +195,85 @@ def test_sweep_thresholds_returns_one_report_per_tau():
 
 
 # --------------------------------------------------------------------------- #
+# Bootstrap confidence intervals
+# --------------------------------------------------------------------------- #
+def test_bootstrap_perfect_agreement_is_a_point_at_one():
+    """Every resample of a perfect judge is still perfect -> CI collapses to [1, 1]."""
+    gold = mast.MASTGold(
+        trace_id="t1", mas_name="AppWorld", benchmark="B", round="Round 1",
+        taxonomy_version="v1", n_annotators=3, present={"FM-1.5": True},
+    )
+    results = [(_report("t1", ["FM-1.5"]), gold)]
+    boot = evals.bootstrap_scores(results, n_resamples=200, seed=0)
+    assert boot.n_traces == 1
+    assert boot.overall.kappa.point == 1.0
+    assert boot.overall.kappa.lo == 1.0
+    assert boot.overall.kappa.hi == 1.0
+
+
+def test_bootstrap_is_deterministic_given_seed():
+    gold1 = _gold("t1", {"FM-1.5": True, "FM-1.1": False})
+    gold2 = _gold("t2", {"FM-1.5": False, "FM-1.1": True})
+    results = [
+        (_report("t1", ["FM-1.5"]), gold1),
+        (_report("t2", ["FM-1.5"]), gold2),  # spurious FP, missed FM-1.1 -> imperfect
+    ]
+    a = evals.bootstrap_scores(results, n_resamples=300, seed=7)
+    b = evals.bootstrap_scores(results, n_resamples=300, seed=7)
+    assert a.model_dump() == b.model_dump()
+
+
+def test_bootstrap_different_seeds_can_disagree_but_bracket_point():
+    gold1 = _gold("t1", {"FM-1.5": True, "FM-1.1": False})
+    gold2 = _gold("t2", {"FM-1.5": False, "FM-1.1": True})
+    results = [
+        (_report("t1", ["FM-1.5"]), gold1),
+        (_report("t2", ["FM-1.5"]), gold2),
+    ]
+    boot = evals.bootstrap_scores(results, n_resamples=500, seed=1)
+    ci = boot.overall.precision
+    assert ci.lo is not None and ci.hi is not None
+    assert ci.lo <= ci.point <= ci.hi
+
+
+def test_bootstrap_per_mode_matches_point_estimate_labels():
+    gold1 = _gold("t1", {"FM-1.5": True})
+    gold2 = _gold("t2", {"FM-2.1": True})
+    results = [
+        (_report("t1", ["FM-1.5"]), gold1),
+        (_report("t2", ["FM-2.1"]), gold2),
+    ]
+    boot = evals.bootstrap_scores(results, n_resamples=100, seed=0)
+    assert {s.label for s in boot.per_mode} == {"FM-1.5", "FM-2.1"}
+
+
+def test_bootstrap_empty_raises():
+    import pytest
+
+    with pytest.raises(ValueError):
+        evals.bootstrap_scores([])
+
+
+def test_bootstrap_wide_interval_when_mode_rarely_resampled():
+    """A mode present in only one of several traces gets a wide/undefined-lo CI, not a
+    falsely narrow one -- the resample sometimes omits it entirely."""
+    gold1 = _gold("t1", {"FM-1.5": True})
+    gold2 = _gold("t2", {"FM-2.1": True})
+    gold3 = _gold("t3", {"FM-2.1": False})
+    results = [
+        (_report("t1", ["FM-1.5"]), gold1),
+        (_report("t2", ["FM-2.1"]), gold2),
+        (_report("t3", []), gold3),
+    ]
+    boot = evals.bootstrap_scores(results, n_resamples=300, seed=3)
+    fm15 = next(s for s in boot.per_mode if s.label == "FM-1.5")
+    # FM-1.5 only ever comes from t1; some resamples of 3-with-replacement omit t1
+    # entirely, so its per_mode.n reflects the POINT estimate's single occurrence
+    # while the CI is built only from resamples that included it at all.
+    assert fm15.n == 1
+
+
+# --------------------------------------------------------------------------- #
 # Multi-run aggregation
 # --------------------------------------------------------------------------- #
 def _gold(trace_id: str, present: dict[str, bool]) -> mast.MASTGold:

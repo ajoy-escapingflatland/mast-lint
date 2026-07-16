@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from mastlint.adapters import mast
-from mastlint.schema import Trace
+from mastlint.schema import Role, Trace
 from mastlint.taxonomy import failure_modes
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "mad_human_sample.json"
@@ -386,6 +386,164 @@ def test_hyperagent_without_trajectory_falls_back():
         "round": "Round 2", "mas_name": "HyperAgent", "benchmark_name": "SWE",
         "trace_id": 301, "annotations": [],
         "trace": json.dumps({"problem_statement": ["p"], "trajectory": []}),
+    }
+    trace = mast.to_trace(rec)
+    assert len(trace.spans) == 1
+    assert trace.spans[0].meta.get("parsing") == "raw_unsegmented"
+
+
+# A format-faithful mini AppWorld record: real logs are indentation-nested plain
+# text, 26-34K chars. This exercises the task-banner extraction, Supervisor/sub-agent
+# turn segmentation, casing normalization, Code Execution Output as a tool span, and
+# the Entering/Exiting loop-boundary lines dropping out for lack of body content.
+APPWORLD_LOG = """
+******************** Task 5/16 (692c77d_1)  ********************
+Give a 5-star rating to all songs in my Spotify playlists which I have liked.
+Response from Supervisor Agent
+    # I need to interact with the Spotify app to rate liked songs.
+    send_message(app_name='spotify', message='Get my playlists')
+
+
+
+Code Execution Output
+
+    # CallExtension
+    reply = self.send_message(app_name='spotify', message='Get my playlists')
+
+
+
+Entering spotify Agent message loop
+    Message to spotify Agent
+        Get my playlists
+
+
+
+    Response from spotify Agent
+        # Fetching playlists now.
+        print(apis.spotify.show_playlists())
+
+
+
+Exiting Spotify Agent message loop
+Response from Supervisor Agent
+    # All liked songs have been rated 5 stars.
+    print("Done")
+"""
+
+
+def _appworld_record() -> dict:
+    return {
+        "round": "Generlazability", "mas_name": "AppWorld", "benchmark_name": "AppWorld",
+        "trace_id": 400, "trace": APPWORLD_LOG, "annotations": [],
+    }
+
+
+def test_appworld_parses_into_per_turn_spans():
+    """AppWorld's indentation-nested log segments into Supervisor/sub-agent spans,
+    with the task lifted from the banner-to-first-header text."""
+    trace = mast.to_trace(_appworld_record())
+    assert trace.framework == "AppWorld"
+    assert trace.task == "Give a 5-star rating to all songs in my Spotify playlists which I have liked."
+    assert {"Supervisor", "Spotify", "CodeExecutor"} <= set(trace.agents)
+    assert all(s.meta.get("parsing") == "appworld" for s in trace.spans)
+    assert trace.spans[0].parent_id is None
+    assert trace.spans[1].parent_id == trace.spans[0].span_id
+
+
+def test_appworld_normalizes_app_name_casing():
+    """`spotify` (lowercase, mid-log) and `Spotify` (capitalized, elsewhere) must
+    collapse onto the same agent identity, not fragment into two agents."""
+    trace = mast.to_trace(_appworld_record())
+    assert trace.agents.count("Spotify") >= 1
+    assert "spotify" not in trace.agents
+
+
+def test_appworld_loop_boundary_markers_produce_no_spans():
+    """`Entering .../Exiting ...` lines carry no body of their own — they must not
+    become empty spans."""
+    trace = mast.to_trace(_appworld_record())
+    assert all("message loop" not in s.content for s in trace.spans)
+
+
+def test_appworld_code_execution_output_is_a_tool_span():
+    trace = mast.to_trace(_appworld_record())
+    tool_spans = [s for s in trace.spans if s.agent == "CodeExecutor"]
+    assert tool_spans
+    assert all(s.role == Role.tool for s in tool_spans)
+    assert tool_spans[0].meta.get("appworld_kind") == "code_output"
+
+
+def test_appworld_without_headers_falls_back():
+    """An AppWorld blob with no known headers yields no spans -> honest raw fallback."""
+    rec = {
+        "round": "Generlazability", "mas_name": "AppWorld", "benchmark_name": "AppWorld",
+        "trace_id": 401, "trace": "just an opaque blob with no headers", "annotations": [],
+    }
+    trace = mast.to_trace(rec)
+    assert len(trace.spans) == 1
+    assert trace.spans[0].meta.get("parsing") == "raw_unsegmented"
+
+
+# A format-faithful mini Magentic-One GAIA record. GAIA is a benchmark, not one
+# framework -- only this log shape (docker/pip preamble -> SCENARIO.PY STARTING ->
+# ---------- Speaker ---------- blocks -> SCENARIO.PY COMPLETE footer) is parsed;
+# the other GAIA log shape (a completely different Python-logging format) has no
+# parser and stays raw_unsegmented, exercised below.
+GAIA_MAGENTIC_LOG = """
+Processing /autogen_python/packages/autogen-core
+Successfully installed autogen-agentchat-0.4.9 autogen-core-0.4.9
+SCENARIO.PY STARTING !#!#
+---------- user ----------
+How many at bats did the Yankee with the most walks in 1977 have that season?
+---------- MagenticOneOrchestrator ----------
+We are working to address the following user request: at bats question.
+---------- WebSurfer ----------
+The player with the most walks was Reggie Jackson with 74 walks, 525 at bats.
+---------- MagenticOneOrchestrator ----------
+FINAL ANSWER: 525
+SCENARIO.PY COMPLETE !#!#
+SCENARIO.PY RUNTIME: 128 !#!#
+RUN.SH COMPLETE !#!#
+"""
+
+
+def _gaia_magentic_record() -> dict:
+    return {
+        "round": "Generlazability", "mas_name": "GAIA", "benchmark_name": "GAIA",
+        "trace_id": 500, "trace": GAIA_MAGENTIC_LOG, "annotations": [],
+    }
+
+
+def test_gaia_magentic_one_parses_into_per_turn_spans():
+    """The Magentic-One-shaped GAIA log segments past the docker/pip preamble into
+    user/orchestrator/WebSurfer spans, with the task lifted from the first `user` turn."""
+    trace = mast.to_trace(_gaia_magentic_record())
+    assert trace.framework == "GAIA"
+    assert trace.task == "How many at bats did the Yankee with the most walks in 1977 have that season?"
+    assert {"user", "MagenticOneOrchestrator", "WebSurfer"} <= set(trace.agents)
+    assert all(s.meta.get("parsing") == "gaia_magentic_one" for s in trace.spans)
+    assert trace.spans[0].role == Role.user
+    assert trace.spans[0].parent_id is None
+    assert trace.spans[1].parent_id == trace.spans[0].span_id
+
+
+def test_gaia_magentic_one_drops_harness_footer_noise():
+    """The SCENARIO.PY COMPLETE / RUNTIME / RUN.SH COMPLETE footer lines are harness
+    output, not agent content -- they must not leak into the last turn's body."""
+    trace = mast.to_trace(_gaia_magentic_record())
+    last = trace.spans[-1]
+    assert last.content == "FINAL ANSWER: 525"
+    assert "SCENARIO.PY" not in last.content
+    assert "RUN.SH" not in last.content
+
+
+def test_gaia_non_magentic_shape_falls_back():
+    """The other GAIA log shape (no SCENARIO.PY marker) has no parser -- honest raw
+    fallback, not a mis-parse."""
+    rec = {
+        "round": "Generlazability", "mas_name": "GAIA", "benchmark_name": "GAIA",
+        "trace_id": 501, "annotations": [],
+        "trace": "INFO [browser_use] some other agent's log format entirely, no markers here",
     }
     trace = mast.to_trace(rec)
     assert len(trace.spans) == 1

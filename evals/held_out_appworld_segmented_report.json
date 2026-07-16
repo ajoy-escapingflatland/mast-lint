@@ -1,0 +1,244 @@
+{
+  "n_traces": 3,
+  "overall": {
+    "label": "overall",
+    "n": 39,
+    "tp": 3,
+    "fp": 2,
+    "fn": 4,
+    "tn": 30,
+    "precision": 0.6,
+    "recall": 0.42857142857142855,
+    "f1": 0.5,
+    "kappa": 0.4120603015075378
+  },
+  "per_mode": [
+    {
+      "label": "FM-1.1",
+      "n": 3,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-1.2",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-1.3",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-1.5",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "tn": 2,
+      "precision": null,
+      "recall": 0.0,
+      "f1": null,
+      "kappa": 0.0
+    },
+    {
+      "label": "FM-2.1",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-2.2",
+      "n": 3,
+      "tp": 1,
+      "fp": 1,
+      "fn": 0,
+      "tn": 1,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6666666666666666,
+      "kappa": 0.39999999999999997
+    },
+    {
+      "label": "FM-2.3",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "tn": 2,
+      "precision": null,
+      "recall": 0.0,
+      "f1": null,
+      "kappa": 0.0
+    },
+    {
+      "label": "FM-2.4",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-2.5",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "tn": 2,
+      "precision": null,
+      "recall": 0.0,
+      "f1": null,
+      "kappa": 0.0
+    },
+    {
+      "label": "FM-2.6",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-3.1",
+      "n": 3,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "tn": 2,
+      "precision": 0.0,
+      "recall": null,
+      "f1": null,
+      "kappa": 0.0
+    },
+    {
+      "label": "FM-3.2",
+      "n": 3,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "tn": 1,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666,
+      "kappa": 0.39999999999999997
+    },
+    {
+      "label": "FM-3.3",
+      "n": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    }
+  ],
+  "by_version": {
+    "v1": {
+      "label": "v1",
+      "n": 13,
+      "tp": 0,
+      "fp": 2,
+      "fn": 2,
+      "tn": 9,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "kappa": -0.1818181818181819
+    },
+    "v2": {
+      "label": "v2",
+      "n": 26,
+      "tp": 3,
+      "fp": 0,
+      "fn": 2,
+      "tn": 21,
+      "precision": 1.0,
+      "recall": 0.6,
+      "f1": 0.7499999999999999,
+      "kappa": 0.7078651685393259
+    }
+  },
+  "unscored_findings": 0,
+  "per_trace": [
+    {
+      "trace_id": "mad-0",
+      "mas_name": "AppWorld",
+      "taxonomy_version": "v1",
+      "human_fired": [
+        "FM-1.5",
+        "FM-2.5"
+      ],
+      "judge_fired": [
+        "FM-2.2",
+        "FM-3.1"
+      ],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-5",
+      "mas_name": "AppWorld",
+      "taxonomy_version": "v2",
+      "human_fired": [
+        "FM-3.2"
+      ],
+      "judge_fired": [],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-11",
+      "mas_name": "AppWorld",
+      "taxonomy_version": "v2",
+      "human_fired": [
+        "FM-1.1",
+        "FM-2.2",
+        "FM-2.3",
+        "FM-3.2"
+      ],
+      "judge_fired": [
+        "FM-1.1",
+        "FM-2.2",
+        "FM-3.2"
+      ],
+      "unscored_judge_modes": []
+    }
+  ],
+  "threshold": 0.0
+}

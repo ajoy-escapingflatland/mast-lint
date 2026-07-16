@@ -7,9 +7,12 @@ HuggingFace hub as `mcemri/MAD` / `mcemri/MAST-Data`.
 This adapter does TWO distinct jobs, deliberately kept separate:
 
 1. ``to_trace(record)`` — parse a run into a canonical ``schema.Trace``. AG2, MetaGPT,
-   ChatDev, and HyperAgent are parsed into real per-turn spans (see
-   ``STRUCTURED_FRAMEWORKS`` / ``_PARSERS``); MetaGPT ships in two on-disk formats and
-   both are handled (see ``_metagpt_spans``). Every other framework's ``trace`` is a
+   ChatDev, HyperAgent, AppWorld, and (one of two log shapes of) GAIA are parsed into
+   real per-turn spans (see ``STRUCTURED_FRAMEWORKS`` / ``_PARSERS``); MetaGPT ships in
+   two on-disk formats and both are handled (see ``_metagpt_spans``); GAIA is a
+   benchmark, not one framework, and only its Magentic-One-shaped traces parse (see
+   ``_gaia_spans``) — the other GAIA log shape stays raw_unsegmented on purpose.
+   Every other framework's ``trace`` is a
    semi-structured log blob and is passed through as a single, explicitly-marked
    ``raw_unsegmented`` span until its own parser is written. Downstream code stays honest
    because the marker is in ``span.meta``.
@@ -105,7 +108,7 @@ MERGED_LABELS: frozenset[str] = frozenset({
 # Frameworks whose ``trace`` we parse into real per-turn spans. Everything else is
 # passed through as one raw_unsegmented span (see module docstring, job #1).
 STRUCTURED_FRAMEWORKS: frozenset[str] = frozenset(
-    {"AG2", "MetaGPT", "ChatDev", "HyperAgent"}
+    {"AG2", "MetaGPT", "ChatDev", "HyperAgent", "AppWorld", "GAIA"}
 )
 
 # ``span.meta["parsing"]`` value stamped by the single-span fallback. ``is_segmented``
@@ -539,6 +542,161 @@ def _hyperagent_spans(record: dict) -> tuple[str, list[Span]]:
     return task, spans
 
 
+# AppWorld emits an indentation-nested plain-text log, no timestamps. A run opens
+# with a banner announcing which benchmark task this is, then a Supervisor agent
+# delegates to per-app sub-agents (Spotify, SimpleNote, ...) via a fixed vocabulary
+# of headers, each a bare line (indentation grows with nesting depth, ignored here —
+# the header text alone is the boundary signal):
+#
+#   ******************** Task N/M (id) ********************   — task banner, once
+#   Response from Supervisor Agent / Response from <App> Agent
+#   Message to Supervisor Agent / Message to <App> Agent
+#   Entering <App> Agent message loop / Exiting <App> Agent message loop  — no body
+#   Code Execution Output
+#   Response from send_message API
+#
+# App names are inconsistently cased across traces (``Spotify`` vs ``spotify``) —
+# normalized so the same app isn't split into two agent identities. The task
+# instruction is the text between the banner and the first header, lifted the same
+# way ChatDev lifts its ``task_prompt`` (never emitted as a span, only as ``task``).
+_AW_TASK_BANNER = re.compile(r"^[ \t]*\*{5,}\s*Task \d+/\d+ \([^)]*\)\s*\*{5,}[ \t]*$",
+                              re.MULTILINE)
+_AW_HDR = re.compile(
+    r"^[ \t]*(?:"
+    r"Response from (?P<resp_agent>.+?) Agent"
+    r"|Response from send_message API"
+    r"|Message to (?P<msg_agent>.+?) Agent"
+    r"|Entering (?P<enter_agent>.+?) Agent message loop"
+    r"|Exiting (?P<exit_agent>.+?) Agent message loop"
+    r"|Code Execution Output"
+    r")[ \t]*$",
+    re.MULTILINE,
+)
+
+
+def _aw_agent(name: str) -> str:
+    """Normalize app-name casing (``spotify`` vs ``Spotify``) without mangling names
+    that are already mixed-case (``SimpleNote``)."""
+    name = name.strip()
+    return name[:1].upper() + name[1:] if name.islower() else name
+
+
+def _appworld_blocks(raw: str) -> Iterator[tuple[str, str]]:
+    """Split the log into (header_line, body) blocks at each ``_AW_HDR`` match."""
+    matches = list(_AW_HDR.finditer(raw))
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(raw)
+        yield m.group(0).strip(), raw[m.end():end]
+
+
+def _appworld_spans(record: dict) -> tuple[str, list[Span]]:
+    """Parse an AppWorld run into per-turn spans. Returns ``(task, [])`` when no
+    known headers are found, so the caller falls back to a raw span."""
+    raw = str(record["trace"])
+
+    task = ""
+    banner_m = _AW_TASK_BANNER.search(raw)
+    first_hdr = _AW_HDR.search(raw)
+    if banner_m and first_hdr:
+        task = raw[banner_m.end():first_hdr.start()].strip()
+
+    spans: list[Span] = []
+    prev: str | None = None
+    for header, body in _appworld_blocks(raw):
+        body = body.strip()
+        if not body:
+            continue  # Entering/Exiting loop markers, and any other empty block
+        meta: dict = {"parsing": "appworld"}
+        if header.startswith("Response from Supervisor Agent"):
+            agent, role, meta["appworld_kind"] = "Supervisor", Role.assistant, "response"
+        elif header.startswith("Response from send_message API"):
+            agent, role, meta["appworld_kind"] = "send_message", Role.tool, "tool_response"
+        elif header.startswith("Response from "):
+            m = re.match(r"Response from (.+) Agent", header)
+            agent = _aw_agent(m.group(1)) if m else "Agent"
+            role, meta["appworld_kind"] = Role.assistant, "response"
+        elif header.startswith("Message to Supervisor Agent"):
+            agent, role, meta["appworld_kind"] = "Supervisor", Role.assistant, "message"
+        elif header.startswith("Message to "):
+            m = re.match(r"Message to (.+) Agent", header)
+            agent = _aw_agent(m.group(1)) if m else "Agent"
+            role, meta["appworld_kind"] = Role.assistant, "message"
+        elif header.startswith("Code Execution Output"):
+            agent, role, meta["appworld_kind"] = "CodeExecutor", Role.tool, "code_output"
+        else:
+            agent, role, meta["appworld_kind"] = "System", Role.system, "loop_boundary"
+        span = Span(
+            span_id=f"s{len(spans) + 1}",
+            parent_id=prev,
+            agent=agent,
+            role=role,
+            kind="message",
+            content=body,
+            meta=meta,
+        )
+        spans.append(span)
+        prev = span.span_id
+    return task, spans
+
+
+# GAIA is a BENCHMARK, not one agent framework — the 2 human-labeled GAIA traces
+# were produced by two unrelated systems with unrelated log formats. Only the
+# Magentic-One-shaped one is parsed here; the other stays raw_unsegmented (see
+# module docstring) rather than writing a second parser validated against a single
+# example with no way to check it generalizes.
+#
+# Magentic-One (AutoGen's orchestrator) traces open with docker/pip-install setup
+# noise, then ``SCENARIO.PY STARTING !#!#``, then simple ``---------- Speaker
+# ----------`` block headers (user / MagenticOneOrchestrator / WebSurfer / ...),
+# and close with ``SCENARIO.PY COMPLETE !#!#`` / runtime / ``RUN.SH COMPLETE``
+# harness footer lines that must not leak into the last turn's content.
+_GAIA_SCENARIO_START = re.compile(r"SCENARIO\.PY STARTING.*$", re.MULTILINE)
+_GAIA_HDR = re.compile(r"^-{4,}\s*(.+?)\s*-{4,}\s*$", re.MULTILINE)
+_GAIA_FOOTER_NOISE = re.compile(
+    r"^(SCENARIO\.PY (COMPLETE|RUNTIME:.*)|RUN\.SH COMPLETE).*$\n?", re.MULTILINE
+)
+
+
+def _gaia_spans(record: dict) -> tuple[str, list[Span]]:
+    """Parse a Magentic-One-shaped GAIA run into per-turn spans. Returns ``(task, [])``
+    for any other GAIA log shape (no ``SCENARIO.PY STARTING`` marker, or no speaker
+    headers), so the caller falls back to a raw span rather than mis-parsing it."""
+    raw = str(record["trace"])
+    start_m = _GAIA_SCENARIO_START.search(raw)
+    if not start_m:
+        return "", []
+    body_text = _GAIA_FOOTER_NOISE.sub("", raw[start_m.end():])
+
+    matches = list(_GAIA_HDR.finditer(body_text))
+    if not matches:
+        return "", []
+
+    task = ""
+    spans: list[Span] = []
+    prev: str | None = None
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(body_text)
+        speaker = m.group(1).strip()
+        turn_body = body_text[m.end():end].strip()
+        if not turn_body:
+            continue
+        role = Role.user if speaker.lower() == "user" else Role.assistant
+        if role is Role.user and not task:
+            task = turn_body
+        span = Span(
+            span_id=f"s{len(spans) + 1}",
+            parent_id=prev,
+            agent=speaker,
+            role=role,
+            kind="message",
+            content=turn_body,
+            meta={"parsing": "gaia_magentic_one"},
+        )
+        spans.append(span)
+        prev = span.span_id
+    return task, spans
+
+
 def _raw_span(record: dict) -> tuple[str, list[Span]]:
     """Fallback for frameworks without a dedicated parser yet: emit the whole run as
     one explicitly-marked span. Honest, lossy, and clearly temporary."""
@@ -576,6 +734,8 @@ _PARSERS = {
     "MetaGPT": _metagpt_spans,
     "ChatDev": _chatdev_spans,
     "HyperAgent": _hyperagent_spans,
+    "AppWorld": _appworld_spans,
+    "GAIA": _gaia_spans,
 }
 
 

@@ -160,6 +160,34 @@ def eval_sweep(
     print_sweep(sweep_thresholds(results, thresholds))
 
 
+@app.command("eval-ci")
+def eval_ci(
+    raw_in: Path = typer.Argument(..., help="Raw findings JSON from `eval --raw-out`"),
+    confidence_threshold: float = typer.Option(
+        0.0, "--confidence-threshold", min=0.0, max=1.0,
+        help="Min finding confidence to count a mode as fired.",
+    ),
+    resamples: int = typer.Option(2000, "--resamples", min=100, help="Bootstrap draws"),
+    ci_level: float = typer.Option(0.95, "--ci-level", min=0.5, max=0.999),
+    seed: int = typer.Option(0, "--seed", help="Bootstrap RNG seed (reproducible CIs)"),
+    as_json: bool = typer.Option(False, "--json", help="Emit JSON instead of a table"),
+):
+    """Trace-level bootstrap confidence intervals for κ/precision/recall/F1 (offline, no
+    API calls). Required before publishing any number — a point estimate on a handful of
+    traces says nothing about how much to trust it."""
+    from .evals import bootstrap_scores, load_raw_results, print_bootstrap
+
+    results = load_raw_results(raw_in)
+    report = bootstrap_scores(
+        results, threshold=confidence_threshold, n_resamples=resamples,
+        ci_level=ci_level, seed=seed,
+    )
+    if as_json:
+        print(report.model_dump_json(indent=2))
+    else:
+        print_bootstrap(report)
+
+
 @app.command("eval-agg")
 def eval_agg(
     raw_in: list[Path] = typer.Argument(

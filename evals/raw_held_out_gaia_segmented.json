@@ -1,0 +1,281 @@
+[
+  {
+    "report": {
+      "trace_id": "mad-17",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s12",
+            "s13"
+          ],
+          "rationale": "The batting table in s10 shows Roy White led the team with 75 walks (BB=75, 519 AB), yet WebSurfer claimed Reggie Jackson (74 BB) had the most, and the orchestrator immediately issued 'FINAL ANSWER: 525' with no cross-check against the visible data, letting the error pass unexamined.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-2.6",
+          "failure_mode_name": "Reasoning-Action Mismatch",
+          "category": "FC2",
+          "span_ids": [
+            "s12"
+          ],
+          "rationale": "WebSurfer had access to the full walks column (Roy White 75 BB was the highest) but reported Reggie Jackson with 74 walks as the leader, an extraction that contradicts the data it had just surfaced.",
+          "confidence": 0.5
+        }
+      ],
+      "modes_fired": [
+        "FM-2.6",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-17",
+      "mas_name": "GAIA",
+      "benchmark": "Magentic",
+      "round": "Generlazability",
+      "taxonomy_version": "final",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": true,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": true
+      },
+      "votes": {
+        "FM-1.1": [
+          true,
+          false,
+          true
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          true,
+          false,
+          true
+        ],
+        "FM-3.3": [
+          true,
+          true,
+          true
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-18",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s1"
+          ],
+          "rationale": "In step 2 the extract_content action returned text that did NOT contain any pace figure, yet in step 3 the agent stated 'The pace of 21.02 km/h is confirmed from the page' \u2014 verification was performed but reached a false confirmation not supported by the extracted evidence.",
+          "confidence": 0.75
+        },
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s1"
+          ],
+          "rationale": "Steps 6, 7, 9 and 10 repeatedly re-run essentially identical python_execute code computing time_hours/thousands-of-hours (empty outputs from forgetting to print, then re-running), redoing already-succeeded calculations and wasting steps.",
+          "confidence": 0.7
+        },
+        {
+          "failure_mode_id": "FM-2.2",
+          "failure_mode_name": "Fail to Ask for Clarification",
+          "category": "FC2",
+          "span_ids": [
+            "s1"
+          ],
+          "rationale": "The NASA fact sheet gave both a distance range (357,000\u2013407,000 km) and an explicit perigee value (0.3633\u00d710^6 = 363,300 km); the agent silently equated 'minimum perigee distance' with the 357,000 km range floor without resolving this ambiguity or checking the specific perigee figure.",
+          "confidence": 0.4
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s1"
+          ],
+          "rationale": "The final answer of 17,000 hours is declared complete at step 11 without any independent cross-check of the distance value or the computation against an alternative source.",
+          "confidence": 0.35
+        }
+      ],
+      "modes_fired": [
+        "FM-1.3",
+        "FM-2.2",
+        "FM-3.2",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-18",
+      "mas_name": "GAIA",
+      "benchmark": "OpenManus",
+      "round": "Generlazability",
+      "taxonomy_version": "final",
+      "n_annotators": 3,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-1.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.2": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.3": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.4": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.5": [
+          false,
+          false,
+          false
+        ],
+        "FM-2.6": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.1": [
+          false,
+          false,
+          false
+        ],
+        "FM-3.2": [
+          false,
+          false,
+          true
+        ],
+        "FM-3.3": [
+          false,
+          false,
+          true
+        ]
+      },
+      "unmapped": {}
+    }
+  }
+]

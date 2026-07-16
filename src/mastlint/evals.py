@@ -26,6 +26,7 @@ Reports) so it is fully unit-testable offline.
 from __future__ import annotations
 
 import json
+import random
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -256,6 +257,154 @@ def sweep_thresholds(
 ) -> list[EvalReport]:
     """Re-score the same raw results at each threshold — a κ-vs-τ curve, zero API calls."""
     return [score(results, threshold=t) for t in thresholds]
+
+
+# --------------------------------------------------------------------------- #
+# Bootstrap confidence intervals — a point-estimate κ/P/R/F1 says nothing about
+# how much to trust it on a handful of traces; the CI does. Required before
+# publishing any number per evals/held_out.md and the design doc's success criteria.
+# --------------------------------------------------------------------------- #
+class CI(BaseModel):
+    """One metric's point estimate plus percentile bootstrap bounds."""
+
+    point: float | None
+    lo: float | None
+    hi: float | None
+
+
+class ScoreCI(BaseModel):
+    """Precision/recall/F1/kappa for one slice (overall or a mode), each with a CI."""
+
+    label: str
+    n: int
+    precision: CI
+    recall: CI
+    f1: CI
+    kappa: CI
+
+
+class BootstrapReport(BaseModel):
+    """Trace-level percentile bootstrap CIs over an EvalReport's overall + per-mode scores."""
+
+    n_traces: int
+    n_resamples: int
+    ci_level: float
+    seed: int
+    overall: ScoreCI
+    per_mode: list[ScoreCI]
+
+
+def _percentile_ci(values: list[float], point_val: float | None, ci_level: float) -> CI:
+    vals = sorted(v for v in values if v is not None)
+    if not vals:
+        return CI(point=point_val, lo=None, hi=None)
+    alpha = (1 - ci_level) / 2
+    lo_idx = max(0, min(len(vals) - 1, round(alpha * (len(vals) - 1))))
+    hi_idx = max(0, min(len(vals) - 1, round((1 - alpha) * (len(vals) - 1))))
+    return CI(point=point_val, lo=vals[lo_idx], hi=vals[hi_idx])
+
+
+def bootstrap_scores(
+    results: list[tuple[Report, MASTGold]],
+    *,
+    threshold: float = 0.0,
+    n_resamples: int = 2000,
+    ci_level: float = 0.95,
+    seed: int = 0,
+) -> BootstrapReport:
+    """Trace-level nonparametric (percentile) bootstrap CI for overall + per-mode
+    precision/recall/F1/kappa.
+
+    Resamples TRACES with replacement, never individual (mode, human, judge) cells —
+    cells from the same trace share judge stochasticity and trace-level context, so
+    resampling at the cell level would understate variance and produce falsely narrow
+    intervals. Each of ``n_resamples`` draws re-runs ``score()`` on the resampled trace
+    list; bounds are the empirical ``ci_level`` percentiles of the resulting metric
+    distribution (Efron's percentile bootstrap). Deterministic given ``seed`` — the CI
+    recomputes from a persisted raw-results file with zero LLM calls, same as every
+    other offline eval command here.
+
+    With few traces per label (a mode with n<5 in `EvalReport.per_mode`), the interval
+    will be wide. Report it as-is — a wide interval is the honest signal that the point
+    estimate isn't trustworthy yet, not a bug to narrow by resampling harder.
+    """
+    if not results:
+        raise ValueError("bootstrap_scores needs at least one result")
+    rng = random.Random(seed)
+    n = len(results)
+
+    point = score(results, threshold=threshold)
+    replicates = [
+        score([results[rng.randrange(n)] for _ in range(n)], threshold=threshold)
+        for _ in range(n_resamples)
+    ]
+
+    def _score_ci(point_score: Score, rep_scores: list[Score | None]) -> ScoreCI:
+        present = [s for s in rep_scores if s is not None]
+        return ScoreCI(
+            label=point_score.label,
+            n=point_score.n,
+            precision=_percentile_ci([s.precision for s in present], point_score.precision, ci_level),
+            recall=_percentile_ci([s.recall for s in present], point_score.recall, ci_level),
+            f1=_percentile_ci([s.f1 for s in present], point_score.f1, ci_level),
+            kappa=_percentile_ci([s.kappa for s in present], point_score.kappa, ci_level),
+        )
+
+    overall_ci = _score_ci(point.overall, [r.overall for r in replicates])
+
+    per_mode_ci = []
+    for mode_score in point.per_mode:
+        rep_for_mode = [
+            next((s for s in rep.per_mode if s.label == mode_score.label), None)
+            for rep in replicates
+        ]
+        per_mode_ci.append(_score_ci(mode_score, rep_for_mode))
+
+    return BootstrapReport(
+        n_traces=n, n_resamples=n_resamples, ci_level=ci_level, seed=seed,
+        overall=overall_ci, per_mode=per_mode_ci,
+    )
+
+
+def print_bootstrap(report: BootstrapReport) -> None:
+    """Terminal summary of a bootstrap CI report."""
+    lvl = f"{report.ci_level:.0%}"
+
+    def _fmt_ci(ci: CI) -> str:
+        if ci.lo is None or ci.hi is None:
+            return _fmt(ci.point)
+        return f"{_fmt(ci.point)} [{_fmt(ci.lo)}, {_fmt(ci.hi)}]"
+
+    try:
+        from rich.console import Console
+        from rich.table import Table
+    except ImportError:
+        o = report.overall
+        print(
+            f"\nBootstrap {lvl} CI over {report.n_traces} trace(s), "
+            f"{report.n_resamples} resamples, seed={report.seed}"
+        )
+        print(f"  overall: κ={_fmt_ci(o.kappa)}  P={_fmt_ci(o.precision)}  R={_fmt_ci(o.recall)}")
+        for s in report.per_mode:
+            print(f"  {s.label} (n={s.n}): κ={_fmt_ci(s.kappa)}  P={_fmt_ci(s.precision)}  "
+                  f"R={_fmt_ci(s.recall)}")
+        return
+
+    console = Console()
+    console.print(
+        f"\n[bold]Bootstrap {lvl} CI[/bold] over {report.n_traces} trace(s) "
+        f"({report.n_resamples} resamples, seed={report.seed})"
+    )
+    tab = Table(title="Point estimate [CI lo, CI hi]", show_lines=False)
+    for col in ("Mode", "n", "κ", "Precision", "Recall", "F1"):
+        tab.add_column(col)
+    tab.add_row("overall", str(report.overall.n), _fmt_ci(report.overall.kappa),
+                _fmt_ci(report.overall.precision), _fmt_ci(report.overall.recall),
+                _fmt_ci(report.overall.f1))
+    for s in report.per_mode:
+        tab.add_row(s.label, str(s.n), _fmt_ci(s.kappa), _fmt_ci(s.precision),
+                    _fmt_ci(s.recall), _fmt_ci(s.f1))
+    console.print(tab)
 
 
 # --------------------------------------------------------------------------- #
