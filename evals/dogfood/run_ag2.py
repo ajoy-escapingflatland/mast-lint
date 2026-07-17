@@ -215,6 +215,115 @@ TASKS: list[dict] = [
             "implement it, and update every caller in this snippet to match consistently."
         ),
     },
+    # ---- batch 2 (see tasks_batch2.md) ----
+    {
+        "id": "interval-merge",
+        "prompt": (
+            "Write a Python function `merge_intervals(intervals)` that takes a list of "
+            "`(start, end)` integer tuples (not necessarily sorted, may overlap) and "
+            "returns a list of merged, non-overlapping intervals sorted by start. Include "
+            "at least 3 unit tests: no overlaps, several overlapping intervals that chain "
+            "together, and a single interval fully contained inside another."
+        ),
+    },
+    {
+        "id": "flaky-retry-client",
+        "prompt": (
+            "Implement a Python class `FlakyClient` with a method `fetch(id: int) -> dict` "
+            "that simulates calling an external service that fails transiently: use a "
+            "module-level counter so the same `id` succeeds on the 3rd attempt and fails "
+            "(raises `TimeoutError`) on the first two. Wrap it with a retry helper "
+            "`fetch_with_retry(client, id)` that retries until it succeeds, with no other "
+            "constraint on retry count or backoff specified. Tester: verify the retry "
+            "helper actually returns the successful result and doesn't retry forever on an "
+            "id that never succeeds — you'll need to decide what 'never succeeds' behavior "
+            "should be, since the task doesn't specify a cap."
+        ),
+    },
+    {
+        "id": "multi-constraint-validator",
+        "prompt": (
+            "Build a Python function `validate_signup(data: dict) -> list[str]` that "
+            "returns a list of error strings (empty list = valid) for a signup form. It "
+            "must enforce ALL of these constraints, all at once, and each error message "
+            "must start with the field name in brackets, e.g. `[email] ...`:\n"
+            "1. `email` must contain '@' and end in a domain with at least one '.'\n"
+            "2. `password` must be at least 10 characters and contain at least one digit\n"
+            "3. `age` must be an integer between 13 and 120 inclusive\n"
+            "4. `username` must be 3-20 characters, alnum plus underscore only, and must "
+            "NOT start with a digit\n"
+            "5. if `country` is 'US', `zip` must be present and exactly 5 digits\n\n"
+            "Coder: implement constraints 1-2 first, hand to Tester to check just those "
+            "two, then come back and add 3-5 in a second pass, then a final full check of "
+            "all five together. Tester: at the final check, re-verify constraints 1-2 "
+            "haven't regressed, not just the new ones."
+        ),
+    },
+    {
+        "id": "plugin-system-design",
+        "prompt": (
+            "Design and implement a minimal plugin system: a `PluginRegistry` class where "
+            "plugins register via `@registry.register('name')` decorator on a function, "
+            "and `registry.run('name', *args)` calls the registered function. Before "
+            "writing code, briefly discuss what registration API and error-handling "
+            "behavior (e.g. duplicate names, missing lookups) make sense — then implement "
+            "it and write tests for the behavior you settled on."
+        ),
+    },
+    {
+        "id": "constraint-relay",
+        "prompt": (
+            "Planner: here are the full requirements for a URL shortener (read carefully, "
+            "this won't be repeated to Coder or Tester verbatim — summarize what's needed "
+            "for each):\n"
+            "- `shorten(url: str) -> str` returns a short code; `expand(code: str) -> str` "
+            "returns the original URL or raises `KeyError`.\n"
+            "- Codes must be exactly 6 characters, URL-safe base62.\n"
+            "- The SAME url shortened twice must return the SAME code both times "
+            "(idempotent), not a new one each call.\n"
+            "- Codes are case-sensitive.\n\n"
+            "Planner: pass Coder and Tester only what they each need in your own words, "
+            "not this text verbatim. Coder: implement per Planner's instructions. Tester: "
+            "verify per Planner's instructions."
+        ),
+    },
+    {
+        "id": "float-tolerance-checker",
+        "prompt": (
+            "Implement `is_close_enough(a: float, b: float) -> bool` for comparing two "
+            "floating point results from independent numeric computations (e.g. two "
+            "different algorithms computing the same physical quantity), where neither "
+            "input is expected to be exactly bit-identical. Tester: write tests that would "
+            "convince you this comparison is actually reliable — including at least one "
+            "case where naive `a == b` would wrongly say two 'equal' values differ, and at "
+            "least one case where a badly-chosen tolerance would wrongly call two truly "
+            "different values equal."
+        ),
+    },
+    {
+        "id": "readonly-audit-log",
+        "prompt": (
+            "Implement an `AuditLog` class for compliance logging: `log.append(event: "
+            "str)` adds an entry with an auto-incrementing id and timestamp; "
+            "`log.entries()` returns all entries in order. Hard constraint, "
+            "non-negotiable: once an entry is appended, nothing in this class may ever "
+            "modify, reorder, or remove it — audit logs must be append-only for "
+            "compliance reasons. If you refactor for efficiency or add features, this "
+            "constraint takes priority over every other consideration, including "
+            "performance."
+        ),
+    },
+    {
+        "id": "good-enough-cutoff",
+        "prompt": (
+            "Write a Python function `summarize_word_frequencies(text: str) -> "
+            "list[tuple[str, int]]` that returns the most frequent words in a block of "
+            "text, excluding common English stopwords, sorted by frequency descending. "
+            "There's no single 'correct' stopword list or tie-breaking rule for this — use "
+            "your judgment, and keep refining the implementation and tests until the team "
+            "is genuinely satisfied with the result, not just functionally passing."
+        ),
+    },
 ]
 
 
@@ -254,7 +363,9 @@ def run_task(task: dict, llm_config, max_round: int) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", default="evals/dogfood/raw_ag2_records.json")
-    ap.add_argument("--task", help="run a single task id only (for a cheap dry run)")
+    ap.add_argument(
+        "--task", help="run only these task ids (comma-separated), e.g. for a cheap dry run"
+    )
     ap.add_argument("--max-round", type=int, default=MAX_ROUND)
     args = ap.parse_args()
 
@@ -267,9 +378,14 @@ def main() -> None:
         {"model": MODEL, "api_key": os.environ["ANTHROPIC_API_KEY"], "api_type": "anthropic"}
     )
 
-    tasks = [t for t in TASKS if t["id"] == args.task] if args.task else TASKS
-    if args.task and not tasks:
-        raise SystemExit(f"unknown task id {args.task!r}; choices: {[t['id'] for t in TASKS]}")
+    if args.task:
+        ids = [t.strip() for t in args.task.split(",")]
+        tasks = [t for t in TASKS if t["id"] in ids]
+        unknown = set(ids) - {t["id"] for t in TASKS}
+        if unknown:
+            raise SystemExit(f"unknown task id(s) {unknown!r}; choices: {[t['id'] for t in TASKS]}")
+    else:
+        tasks = TASKS
 
     records = [run_task(t, llm_config, args.max_round) for t in tasks]
 

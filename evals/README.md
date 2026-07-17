@@ -27,13 +27,37 @@ ground truth now comes from the MAD human-labelled dataset instead.
 
 `examples/trace.example.json` is the first seed case (known labels: FM-3.1 + FM-3.2).
 
-## Step 5 (dogfood) — first pass
+## Step 5 (dogfood)
 
-`dogfood/` is the first Step 5 batch: 8 fresh AG2 traces, contamination-clean
-by construction (never published, generated after `contamination_ceiling.md`
-was written specifically because MAD couldn't produce a clean number). See
-`dogfood/gold_labels.md` for the blind single-annotator labels and
-`dogfood/adjudication.md` for the judge run against them — adjudicated κ =
-0.65 (95% CI [-0.01, 0.94], n=8), replicating this project's earlier
-naive-vs-adjudicated pattern on genuinely fresh data. Single-annotator and
-n=8: informative, not publishable on its own.
+`dogfood/` holds two batches of fresh AG2 traces, contamination-clean by
+construction (never published, generated after `contamination_ceiling.md`
+was written specifically because MAD couldn't produce a clean number).
+
+- **Batch 1** (8 traces): see `dogfood/gold_labels.md` for the blind
+  single-annotator labels and `dogfood/adjudication.md` for the judge run
+  against them — adjudicated κ = 0.65 (95% CI [-0.01, 0.94], n=8).
+- **Batch 2** (8 more traces, designed to probe the six failure modes batch 1
+  never exercised): see `dogfood/gold_labels_batch2.md` and
+  `dogfood/adjudication_batch2.md` — adjudicated κ = 0.79 (95% CI [0.62,
+  0.94], n=8). Batch 2's adjudication also caught a real inconsistency in its
+  own blind pass-1 labels (two traces initially called clean actually had the
+  same FM-1.2 violation caught elsewhere in the batch) — see
+  `adjudication_batch2.md` for the self-correction, kept in the record rather
+  than silently fixed.
+
+**Combined, both batches: κ = 0.76 (95% CI [0.59, 0.94], n=16).** This is the
+first dogfood number with a CI clear of zero and is the current headline
+number for the project — see `dogfood/judge_report_combined_16trace.json`.
+Still single-annotator on both batches (no second qualified annotator on
+either), and batch 1's labels haven't been re-audited with the stricter
+consistency check that surfaced batch 2's self-correction — the honest next
+step before treating either batch's gold as validated ground truth remains a
+second annotator pass.
+
+Across both batches, **FM-1.2 (Disobey Role Specification) fires in at least
+9 of 16 traces and FM-3.2 (No or Incomplete Verification, specifically
+claimed-but-unexecuted verification) in at least 7 of 16** — both organic,
+neither targeted by task design. The judge's recall on FM-1.2 specifically
+remains weak (0.44–0.50 across the two batches) even after adjudication,
+confirming this project's earlier "FM-1.2 recall gap" finding
+(see git history) rather than resolving it.
