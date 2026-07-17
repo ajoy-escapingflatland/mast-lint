@@ -15,3 +15,5 @@ scratch/
 traces_private/
 # fetched research datasets (see scripts/fetch_mast_data.py) — public but large, kept out of git
 data/
+# regenerable from evals/dogfood/raw_ag2_records.json — see run_ag2.py
+evals/dogfood/transcripts/

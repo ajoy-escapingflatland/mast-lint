@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "description": "Single-annotator blind gold labels for the AG2 dogfood traces in raw_ag2_records.json. See gold_labels.md for rationale and evidence per trace.",
+    "taxonomy_version": "final (taxonomy/taxonomy.yaml as frozen 2026-07-16, commit cd9fdf7)",
+    "n_annotators": 1,
+    "labeled_before_any_judge_run": true,
+    "known_limitation": "Single annotator, unlike MAD's 3-annotator ground truth. A second qualified annotator on the PRESENT traces is the honest next step before citing this as validated ground truth (design doc Approach C).",
+    "trace_id_note": "Keys here are the raw dogfood task id (matches TASKS[].id in run_ag2.py). adapters/mast.py::to_trace() will prefix these as 'mad-<id>' when parsing raw_ag2_records.json -- that's a cosmetic artifact of reusing the MAD adapter unchanged, not a claim these are MAD records."
+  },
+  "modes": [
+    "FM-1.1", "FM-1.2", "FM-1.3", "FM-1.4", "FM-1.5",
+    "FM-2.1", "FM-2.2", "FM-2.3", "FM-2.4", "FM-2.5", "FM-2.6",
+    "FM-3.1", "FM-3.2", "FM-3.3"
+  ],
+  "labels": {
+    "linked-list-merge": {
+      "present": [],
+      "notes": "Clean. Verified independently: node-reuse and all 6 traced test cases correct."
+    },
+    "rate-limiter": {
+      "present": ["FM-1.2"],
+      "notes": "Planner (turn 3) writes Coder's full implementation and Tester's full test suite plus a self-claimed verification pass, all in one turn, contradicting its own system message. Content itself verified correct independently. FM-1.3 considered for the redundant re-delivery/re-verification by the real Coder/Tester but treated as a consequence of FM-1.2, not double-fired -- see gold_labels.md."
+    },
+    "cache-refactor": {
+      "present": [],
+      "notes": "Clean. Planner delegates via spec only, waits for real responses. Fix verified correct independently against the docstring."
+    },
+    "csv-report-cli": {
+      "present": [],
+      "notes": "Clean. FM-2.2 explicitly considered and rejected: the task sanctioned 'figure out what's reasonable' as an alternative to asking, and Planner did so with documented, harmless assumptions."
+    },
+    "pubsub-broker": {
+      "present": ["FM-1.2"],
+      "notes": "Clearest instance in the batch. Turn 5's literal name field is 'Planner' but content is headed '## Tester -- Verification Report' -- a direct name/content mismatch, not just stylistic overreach. Planner also ghost-writes Coder's implementation and bugfix. Technical content (the BaseException fix) is correct; pure role-boundary violation."
+    },
+    "state-machine-todo": {
+      "present": [],
+      "notes": "Clean, thorough. Tester verifies the given test plus two additional un-requested cycles."
+    },
+    "perf-optimization": {
+      "present": ["FM-1.2"],
+      "notes": "Planner (turn 2) ghost-writes Coder's full O(n log n) algorithm and starts Tester's verification; real Coder never gets an independent turn anywhere in the trace. Algorithm and complexity verified correct independently."
+    },
+    "raise-vs-none-dispute": {
+      "present": [],
+      "notes": "Borderline but called clean: Planner resolves the stated disagreement unilaterally and hands Coder literal code, but Coder and Tester both still contribute genuine independent work afterward (unlike the three PRESENT traces, where Coder/Tester's contribution is fully subsumed by Planner). Flagged in gold_labels.md as the one call most likely to flip under a second annotator."
+    }
+  }
+}
