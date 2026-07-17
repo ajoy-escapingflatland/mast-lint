@@ -26,10 +26,16 @@ Records get the `_trace_id()` "mad-" prefix from `adapters/mast.py` once passed
 through `to_trace()` (not applied here) — that's a cosmetic quirk of reusing the
 adapter unchanged, not a claim these are MAD records.
 
-Caveat: written without a live `ANTHROPIC_API_KEY` in this environment, so the
-exact AG2 API surface (LLMConfig construction, `is_termination_msg` placement)
-is per current AG2 docs but UNVERIFIED against a real run. Sanity-check with
-`--task <id> --max-round 4` on the cheapest task before running the full set.
+Verified 2026-07-16: `--task linked-list-merge --max-round 4` ran end-to-end
+(ag2==0.14.0) and the output round-tripped through `adapters/mast.py::to_trace` /
+`is_segmented` correctly (4 real per-turn spans, not a raw_unsegmented fallback).
+Two bugs the dry run caught and this file already has fixed: `ConversableAgent`
+defaults to `human_input_mode="TERMINATE"`, which blocks on stdin waiting for a
+human unless set to `"NEVER"` explicitly on all three agents; and the model id
+from AG2's docs (`claude-sonnet-4-5`) was stale — `claude-sonnet-5` is current.
+The other 7 tasks are unverified — sanity-check each with `--max-round 4` before
+running the full set, since AG2's `auto` speaker selection and message content
+vary per task.
 
 Requires: `pip install ag2[anthropic]`, `ANTHROPIC_API_KEY` in the environment.
 Costs real API spend — up to MAX_ROUND turns x 3 agents x however many tasks run.
@@ -45,7 +51,7 @@ import json
 import os
 from pathlib import Path
 
-MODEL = "claude-sonnet-4-5"  # agents don't need judge-grade reasoning; keep this cheap
+MODEL = "claude-sonnet-5"  # agents don't need judge-grade reasoning; keep this cheap
 MAX_ROUND = 12
 TERMINATION_PHRASE = "TASK COMPLETE"
 
@@ -215,12 +221,17 @@ TASKS: list[dict] = [
 def run_task(task: dict, llm_config, max_round: int) -> dict:
     from autogen import ConversableAgent, GroupChat, GroupChatManager
 
-    planner = ConversableAgent(name="Planner", system_message=PLANNER_SYSTEM, llm_config=llm_config)
-    coder = ConversableAgent(name="Coder", system_message=CODER_SYSTEM, llm_config=llm_config)
+    planner = ConversableAgent(
+        name="Planner", system_message=PLANNER_SYSTEM, llm_config=llm_config, human_input_mode="NEVER"
+    )
+    coder = ConversableAgent(
+        name="Coder", system_message=CODER_SYSTEM, llm_config=llm_config, human_input_mode="NEVER"
+    )
     tester = ConversableAgent(
         name="Tester",
         system_message=TESTER_SYSTEM,
         llm_config=llm_config,
+        human_input_mode="NEVER",
         is_termination_msg=lambda msg: TERMINATION_PHRASE in (msg.get("content") or ""),
     )
 
