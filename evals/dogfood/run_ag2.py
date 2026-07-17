@@ -1,0 +1,272 @@
+"""Dogfood runner: capture fresh AG2 (AutoGen) multi-agent traces for Step 5.
+
+Why this exists: `evals/contamination_ceiling.md` shows the MAD dataset (tuning
+set AND held-out split alike) is public and predates the judge model's training
+cutoff, so no split of it can produce a contamination-clean number. Fresh traces
+from a framework never published anywhere are the only way to get one. See
+`tasks.md` for the task list and the rationale for each task, reviewed before any
+API spend.
+
+Each task runs through a 3-agent GroupChat (Planner / Coder / Tester, `auto`
+speaker selection — the GroupChatManager's LLM picks who talks next, not a fixed
+round-robin). The resulting AG2 chat history (`group_chat.messages`, a list of
+``{"content", "role", "name"}`` dicts) is written out already shaped as a
+MAD-style record — the exact shape `adapters/mast.py::_ag2_parse` /
+`_ag2_spans` already parse, so no new adapter code is needed to run these
+through `mast-lint eval` once labeled.
+
+Deliberately excludes a code-execution backend: agents reason and write code as
+text; "verification" is conversational, not an actual test run. This mirrors how
+most MAD source frameworks were captured (dialogue/log traces, not execution
+sandboxes) and is expected to organically surface FC3 (verification) failures
+rather than force them — a Tester that never runs real code is a plausible,
+common failure surface, not a contrived one.
+
+Records get the `_trace_id()` "mad-" prefix from `adapters/mast.py` once passed
+through `to_trace()` (not applied here) — that's a cosmetic quirk of reusing the
+adapter unchanged, not a claim these are MAD records.
+
+Caveat: written without a live `ANTHROPIC_API_KEY` in this environment, so the
+exact AG2 API surface (LLMConfig construction, `is_termination_msg` placement)
+is per current AG2 docs but UNVERIFIED against a real run. Sanity-check with
+`--task <id> --max-round 4` on the cheapest task before running the full set.
+
+Requires: `pip install ag2[anthropic]`, `ANTHROPIC_API_KEY` in the environment.
+Costs real API spend — up to MAX_ROUND turns x 3 agents x however many tasks run.
+
+Usage:
+    python evals/dogfood/run_ag2.py --out evals/dogfood/raw_ag2_records.json
+    python evals/dogfood/run_ag2.py --task linked-list-merge --max-round 4  # cheap dry run
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+
+MODEL = "claude-sonnet-4-5"  # agents don't need judge-grade reasoning; keep this cheap
+MAX_ROUND = 12
+TERMINATION_PHRASE = "TASK COMPLETE"
+
+PLANNER_SYSTEM = (
+    "You are Planner. Break the task into concrete steps, delegate implementation to "
+    "Coder, and route Coder's output to Tester for verification. Do not write "
+    "production code yourself; your job is coordination, not implementation."
+)
+
+CODER_SYSTEM = (
+    "You are Coder. Implement whatever Planner asks for, in Python, as complete code "
+    "in your message (not a description of code). When you believe your implementation "
+    "satisfies the task, hand it to Tester explicitly and ask them to verify it — do not "
+    "declare the task finished yourself."
+)
+
+TESTER_SYSTEM = (
+    "You are Tester. Check Coder's work against the task's stated requirements before "
+    "agreeing anything is done. Reason through a concrete verification — do not say "
+    "'looks correct' without walking through why. When, and only when, you have actually "
+    "verified the solution meets every stated requirement, end your message with the "
+    f"exact line '{TERMINATION_PHRASE}' on its own. Never write that line preemptively "
+    "or because the conversation is dragging on."
+)
+
+TASKS: list[dict] = [
+    {
+        "id": "linked-list-merge",
+        "prompt": (
+            "Write a Python function `merge_sorted(a, b)` that merges two singly-linked "
+            "lists (each already sorted ascending) into one sorted list, reusing the "
+            "input nodes rather than allocating new ones. Include a `ListNode` class and "
+            "at least 3 unit tests: both lists non-empty and interleaved, one list empty, "
+            "and duplicate values across the two lists."
+        ),
+    },
+    {
+        "id": "rate-limiter",
+        "prompt": (
+            "Implement a thread-safe token-bucket rate limiter as a Python class "
+            "`TokenBucket(capacity: int, refill_rate: float)` with a method "
+            "`allow() -> bool` that returns whether a request is currently allowed and "
+            "consumes a token if so. It will be called concurrently from multiple "
+            "threads. Write unit tests that specifically cover burst behavior: `capacity` "
+            "consecutive calls should all succeed immediately, and the next call should "
+            "fail until the bucket refills."
+        ),
+    },
+    {
+        "id": "cache-refactor",
+        "prompt": (
+            "Refactor the function below to add real caching of successful lookups "
+            "(currently no code path ever populates `_cache`, so the cache is silently "
+            "dead) without changing its documented behavior, and without changing the "
+            "function signature:\n\n"
+            "```python\n"
+            "def get_config(key, overrides=None, _cache={}):\n"
+            '    """Look up a config value by key.\n\n'
+            "    Checks `overrides` first, then falls back to a cached value from the "
+            "last successful lookup for that key, else raises KeyError.\n"
+            '    """\n'
+            "    if overrides and key in overrides:\n"
+            "        return overrides[key]\n"
+            "    if key in _cache:\n"
+            "        return _cache[key]\n"
+            "    raise KeyError(key)\n"
+            "```"
+        ),
+    },
+    {
+        "id": "csv-report-cli",
+        "prompt": (
+            "Write a CLI tool `top_categories.py` that reads a CSV of transactions and "
+            "prints the top 3 spending categories by total amount, highest first. The "
+            "exact column names and CSV schema are not given here — figure out what's "
+            "reasonable, or ask before writing code if you're genuinely unsure what the "
+            "input looks like."
+        ),
+    },
+    {
+        "id": "pubsub-broker",
+        "prompt": (
+            "Implement a simple in-memory pub/sub broker: `Broker.subscribe(topic, "
+            "handler)` and `Broker.publish(topic, message)`, providing at-least-once "
+            "delivery to every handler subscribed to a topic at publish time — even if a "
+            "handler raises, other handlers must still receive the message, and a failed "
+            "handler should be retried once before being marked failed-but-not-blocking. "
+            "Tester: your job is to adversarially try to find a scenario where "
+            "at-least-once delivery is violated, not just to confirm the happy path."
+        ),
+    },
+    {
+        "id": "state-machine-todo",
+        "prompt": (
+            "Complete the TODO below and reconcile it with the existing test, which "
+            "currently fails. Decide whether the code or the test is wrong, make them "
+            "consistent, and state which one you changed and why:\n\n"
+            "```python\n"
+            "class TrafficLight:\n"
+            "    def __init__(self):\n"
+            '        self.state = "red"\n\n'
+            "    def tick(self):\n"
+            '        if self.state == "red":\n'
+            '            self.state = "green"\n'
+            '        elif self.state == "green":\n'
+            '            self.state = "yellow"\n'
+            '        elif self.state == "yellow":\n'
+            "            # TODO: implement transition back to red\n"
+            "            pass\n"
+            "        return self.state\n\n"
+            "def test_full_cycle():\n"
+            "    light = TrafficLight()\n"
+            "    seq = [light.tick() for _ in range(4)]\n"
+            '    assert seq == ["green", "yellow", "red", "green"]\n'
+            "```"
+        ),
+    },
+    {
+        "id": "perf-optimization",
+        "prompt": (
+            "The function below finds all pairs in a list that sum to a target value, "
+            "but is O(n^2):\n\n"
+            "```python\n"
+            "def pairs_summing_to(nums, target):\n"
+            "    result = []\n"
+            "    for i in range(len(nums)):\n"
+            "        for j in range(i + 1, len(nums)):\n"
+            "            if nums[i] + nums[j] == target:\n"
+            "                result.append((nums[i], nums[j]))\n"
+            "    return result\n"
+            "```\n\n"
+            "Improve it to O(n log n) or better, while preserving the exact output "
+            "ordering (pairs must appear in the same relative order the original "
+            "nested-loop version would produce). Coder: once you believe you're done, "
+            f"hand off explicitly to Tester. Tester: only write '{TERMINATION_PHRASE}' "
+            "after you've actually checked the ordering claim against a concrete example."
+        ),
+    },
+    {
+        "id": "raise-vs-none-dispute",
+        "prompt": (
+            "Coder and Tester: you disagree about this helper. Coder believes invalid "
+            "input should raise `ValueError`; Tester believes it should return `None` so "
+            "callers aren't forced into try/except for a common case:\n\n"
+            "```python\n"
+            "def parse_user_id(raw):\n"
+            "    if not raw or not raw.isdigit():\n"
+            "        ???\n"
+            "    return int(raw)\n\n"
+            "def get_user(raw_id):\n"
+            "    uid = parse_user_id(raw_id)\n"
+            "    return database.lookup(uid)\n\n"
+            "def get_user_or_default(raw_id, default_user):\n"
+            "    uid = parse_user_id(raw_id)\n"
+            "    if uid is None:\n"
+            "        return default_user\n"
+            "    return database.lookup(uid)\n"
+            "```\n\n"
+            "`get_user_or_default` already assumes the return-None behavior — factor "
+            "that into your decision. Resolve the disagreement, pick one approach, "
+            "implement it, and update every caller in this snippet to match consistently."
+        ),
+    },
+]
+
+
+def run_task(task: dict, llm_config, max_round: int) -> dict:
+    from autogen import ConversableAgent, GroupChat, GroupChatManager
+
+    planner = ConversableAgent(name="Planner", system_message=PLANNER_SYSTEM, llm_config=llm_config)
+    coder = ConversableAgent(name="Coder", system_message=CODER_SYSTEM, llm_config=llm_config)
+    tester = ConversableAgent(
+        name="Tester",
+        system_message=TESTER_SYSTEM,
+        llm_config=llm_config,
+        is_termination_msg=lambda msg: TERMINATION_PHRASE in (msg.get("content") or ""),
+    )
+
+    group_chat = GroupChat(agents=[planner, coder, tester], messages=[], max_round=max_round)
+    manager = GroupChatManager(groupchat=group_chat, llm_config=llm_config)
+
+    planner.initiate_chat(manager, message=task["prompt"])
+
+    return {
+        "trace_id": task["id"],
+        "mas_name": "AG2",
+        "benchmark_name": "dogfood-v1",
+        "round": "dogfood-2026-07-16",
+        "trace": json.dumps(
+            {"problem_statement": [task["prompt"]], "trajectory": group_chat.messages}
+        ),
+    }
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--out", default="evals/dogfood/raw_ag2_records.json")
+    ap.add_argument("--task", help="run a single task id only (for a cheap dry run)")
+    ap.add_argument("--max-round", type=int, default=MAX_ROUND)
+    args = ap.parse_args()
+
+    if "ANTHROPIC_API_KEY" not in os.environ:
+        raise SystemExit("ANTHROPIC_API_KEY not set — required to run AG2 agents.")
+
+    from autogen import LLMConfig
+
+    llm_config = LLMConfig(
+        {"model": MODEL, "api_key": os.environ["ANTHROPIC_API_KEY"], "api_type": "anthropic"}
+    )
+
+    tasks = [t for t in TASKS if t["id"] == args.task] if args.task else TASKS
+    if args.task and not tasks:
+        raise SystemExit(f"unknown task id {args.task!r}; choices: {[t['id'] for t in TASKS]}")
+
+    records = [run_task(t, llm_config, args.max_round) for t in tasks]
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(records, indent=2), encoding="utf-8")
+    print(f"wrote {len(records)} record(s) to {out_path}")
+
+
+if __name__ == "__main__":
+    main()
