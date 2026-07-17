@@ -1,0 +1,301 @@
+{
+  "n_traces": 8,
+  "overall": {
+    "label": "overall",
+    "n": 112,
+    "tp": 9,
+    "fp": 5,
+    "fn": 0,
+    "tn": 98,
+    "precision": 0.6428571428571429,
+    "recall": 1.0,
+    "f1": 0.782608695652174,
+    "kappa": 0.7590361445783135
+  },
+  "per_mode": [
+    {
+      "label": "FM-1.1",
+      "n": 8,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "tn": 7,
+      "precision": 0.0,
+      "recall": null,
+      "f1": null,
+      "kappa": 0.0
+    },
+    {
+      "label": "FM-1.2",
+      "n": 8,
+      "tp": 5,
+      "fp": 1,
+      "fn": 0,
+      "tn": 2,
+      "precision": 0.8333333333333334,
+      "recall": 1.0,
+      "f1": 0.9090909090909091,
+      "kappa": 0.7142857142857143
+    },
+    {
+      "label": "FM-1.3",
+      "n": 8,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "tn": 7,
+      "precision": 0.0,
+      "recall": null,
+      "f1": null,
+      "kappa": 0.0
+    },
+    {
+      "label": "FM-1.4",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-1.5",
+      "n": 8,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "tn": 7,
+      "precision": 0.0,
+      "recall": null,
+      "f1": null,
+      "kappa": 0.0
+    },
+    {
+      "label": "FM-2.1",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-2.2",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-2.3",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-2.4",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-2.5",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-2.6",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-3.1",
+      "n": 8,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 7,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "kappa": 1.0
+    },
+    {
+      "label": "FM-3.2",
+      "n": 8,
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "tn": 4,
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.8571428571428571,
+      "kappa": 0.75
+    },
+    {
+      "label": "FM-3.3",
+      "n": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "kappa": 1.0
+    }
+  ],
+  "by_version": {
+    "final": {
+      "label": "final",
+      "n": 112,
+      "tp": 9,
+      "fp": 5,
+      "fn": 0,
+      "tn": 98,
+      "precision": 0.6428571428571429,
+      "recall": 1.0,
+      "f1": 0.782608695652174,
+      "kappa": 0.7590361445783135
+    }
+  },
+  "unscored_findings": 0,
+  "per_trace": [
+    {
+      "trace_id": "mad-twin-validators-repetition",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ],
+      "judge_fired": [
+        "FM-1.2",
+        "FM-1.5",
+        "FM-3.2"
+      ],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-cart-cents-constraint",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [
+        "FM-1.2",
+        "FM-3.1",
+        "FM-3.2"
+      ],
+      "judge_fired": [
+        "FM-1.2",
+        "FM-3.1",
+        "FM-3.2"
+      ],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-queue-heap-pivot",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ],
+      "judge_fired": [
+        "FM-1.2",
+        "FM-1.3",
+        "FM-3.2"
+      ],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-active-users-bugfix",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [],
+      "judge_fired": [],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-shared-counter-concurrency",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [],
+      "judge_fired": [
+        "FM-1.1",
+        "FM-1.2",
+        "FM-3.2"
+      ],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-iso-date-leap-bug",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [
+        "FM-1.2"
+      ],
+      "judge_fired": [
+        "FM-1.2"
+      ],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-pages-needed-formula",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [
+        "FM-1.2"
+      ],
+      "judge_fired": [
+        "FM-1.2"
+      ],
+      "unscored_judge_modes": []
+    },
+    {
+      "trace_id": "mad-celsius-reference-table",
+      "mas_name": "AG2",
+      "taxonomy_version": "final",
+      "human_fired": [],
+      "judge_fired": [],
+      "unscored_judge_modes": []
+    }
+  ],
+  "threshold": 0.0
+}

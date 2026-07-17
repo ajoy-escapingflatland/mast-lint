@@ -29,7 +29,7 @@ ground truth now comes from the MAD human-labelled dataset instead.
 
 ## Step 5 (dogfood)
 
-`dogfood/` holds two batches of fresh AG2 traces, contamination-clean by
+`dogfood/` holds three batches of fresh AG2 traces, contamination-clean by
 construction (never published, generated after `contamination_ceiling.md`
 was written specifically because MAD couldn't produce a clean number).
 
@@ -44,20 +44,38 @@ was written specifically because MAD couldn't produce a clean number).
   same FM-1.2 violation caught elsewhere in the batch) — see
   `adjudication_batch2.md` for the self-correction, kept in the record rather
   than silently fixed.
+- **Batch 3** (8 more traces, targeting the remaining 9 modes with mechanisms
+  deliberately different from batch 2's attempts — same harness, kept
+  unchanged on purpose): see `dogfood/gold_labels_batch3.md` and
+  `dogfood/adjudication_batch3.md` — adjudicated κ = 0.76 (95% CI [0.44,
+  0.96], n=8). A third consecutive null result on the targeted modes: zero of
+  the 8 newly-targeted modes fired. Batch 3's adjudication caught a second,
+  independent instance of the exact self-correction pattern from batch 2 (a
+  trace called clean on the blind pass turned out to have the same FM-1.2
+  violation already caught elsewhere in the same batch) — see
+  `adjudication_batch3.md`.
 
-**Combined, both batches: κ = 0.76 (95% CI [0.59, 0.94], n=16).** This is the
-first dogfood number with a CI clear of zero and is the current headline
-number for the project — see `dogfood/judge_report_combined_16trace.json`.
-Still single-annotator on both batches (no second qualified annotator on
-either), and batch 1's labels haven't been re-audited with the stricter
-consistency check that surfaced batch 2's self-correction — the honest next
-step before treating either batch's gold as validated ground truth remains a
-second annotator pass.
+**Combined, all three batches: κ = 0.76 (95% CI [0.61, 0.88], n=24).** Tighter
+CI than the 16-trace number and still the current headline number for the
+project — see `dogfood/judge_report_combined_24trace.json`. Still
+single-annotator on all three batches, and none of the batches has been
+re-audited by a second annotator (only by re-reading against the judge's own
+findings) — the honest next step before treating any of this as validated
+ground truth remains a second qualified annotator.
 
-Across both batches, **FM-1.2 (Disobey Role Specification) fires in at least
-9 of 16 traces and FM-3.2 (No or Incomplete Verification, specifically
-claimed-but-unexecuted verification) in at least 7 of 16** — both organic,
-neither targeted by task design. The judge's recall on FM-1.2 specifically
-remains weak (0.44–0.50 across the two batches) even after adjudication,
-confirming this project's earlier "FM-1.2 recall gap" finding
-(see git history) rather than resolving it.
+Across all three batches, **FM-1.2 (Disobey Role Specification) fires in at
+least 14 of 24 traces and FM-3.2 (No or Incomplete Verification) in at least
+10 of 24** — both organic, neither targeted by any task design across any
+batch. No other mode has fired more than twice in 24 traces. The judge's
+recall on FM-1.2 specifically has improved batch over batch (0/3 → 3/6 →
+5/5) but sits at 0.64 combined — still the weakest spot in the judge's
+coverage, confirming rather than resolving this project's earlier documented
+recall gap. **After three batches with genuinely varied task designs
+producing zero organic instances of 9 of the 14 MAST modes, the task-content
+lever looks exhausted for this specific harness** (AG2 Planner/Coder/Tester
+`GroupChat`, `auto` speaker selection, `max_round=12`, no human in the loop)
+— see the recommendation at the end of `dogfood/gold_labels_batch3.md`.
+Getting organic coverage of the remaining modes likely needs a structural
+change to the harness itself (longer/multi-session conversations, a
+different framework, or genuine context truncation), not another batch of
+new task content on the same runner.

@@ -37,7 +37,7 @@ The flow is deliberately small:
   to where in the trace it happened. A judge that "feels" a failure but can't point
   to spans is a bug, not a finding.
 
-## Current state (Step 5 in progress — dogfood batch 2 done, κ off zero)
+## Current state (Step 5 in progress — dogfood batch 3 done, task-content lever exhausted)
 Scaffold, taxonomy, schema, judge, segmenter (v0: whole-trace-as-one-window, see
 `segment.py`), report renderer, and the MAST/MAD dataset adapter (`adapters/mast.py`
 — NOT LangGraph; that framework was never built) all exist and work. `mast-lint
@@ -64,13 +64,13 @@ vs. pretraining-exposure contamination (the MAD dataset is public and predates
 the judge model's cutoff, so no split of it can rule this out — only fresh
 dogfooded traces can).
 
-**Step 5 (dogfood on real agent-loop runs) now has two batches, 16 traces
-total.** `evals/dogfood/` holds 16 fresh AG2 (Planner/Coder/Tester
+**Step 5 (dogfood on real agent-loop runs) now has three batches, 24 traces
+total.** `evals/dogfood/` holds 24 fresh AG2 (Planner/Coder/Tester
 `GroupChat`) traces run against organic, non-benchmark coding tasks designed
 to *plausibly* exercise specific failure modes without forcing them
-(`evals/dogfood/tasks.md`, `evals/dogfood/tasks_batch2.md`, `run_ag2.py`) —
-contamination-clean by construction, since they were never published
-anywhere before this project generated them.
+(`evals/dogfood/tasks.md`, `tasks_batch2.md`, `tasks_batch3.md`,
+`run_ag2.py`) — contamination-clean by construction, since they were never
+published anywhere before this project generated them.
 
 - Batch 1 (8 traces): blind single-annotator labels
   (`evals/dogfood/gold_labels.md`), judged and adjudicated
@@ -86,18 +86,35 @@ anywhere before this project generated them.
   actually had the same violation caught elsewhere in the batch) — recorded
   as a self-correction rather than silently fixed, since it's real evidence
   about single-annotator reliability.
+- Batch 3 (8 more traces, targeting the remaining 9 never-fired modes with
+  mechanisms deliberately different from batch 2's, same harness kept
+  unchanged on purpose): blind labels (`evals/dogfood/gold_labels_batch3.md`),
+  judged and adjudicated (`evals/dogfood/adjudication_batch3.md`) — κ = 0.76
+  (95% CI [0.44, 0.96], n=8). A third consecutive null on the targeted
+  modes — zero of the 8 newly-targeted modes fired. Adjudication caught a
+  second, independent instance of the batch-2 self-correction pattern (a
+  clean-labeled trace that actually had the same FM-1.2 violation caught
+  elsewhere in the same batch).
 
-**Combined: κ = 0.76 (95% CI [0.59, 0.94], n=16)** — see `evals/README.md`.
-This is the first dogfood number with a CI clear of zero. Still
-single-annotator on both batches, and batch 1's labels haven't been
-re-audited with the stricter check that caught batch 2's self-correction —
-that consistency pass, or a second qualified annotator, is the honest next
-step before either batch counts as validated ground truth. FM-1.2 (Disobey
-Role Specification) and FM-3.2 (claimed-but-unexecuted verification) are now
-the dominant organic findings across both batches (9/16 and 7/16 traces
-respectively) — neither was targeted by any task design — and the judge's
-FM-1.2 recall stays weak (0.44–0.50) even after adjudication, confirming
-rather than resolving this project's earlier documented recall gap.
+**Combined: κ = 0.76 (95% CI [0.61, 0.88], n=24)** — see `evals/README.md`.
+Tighter CI than the 16-trace number. Still single-annotator on all three
+batches, and none has been re-audited by an actual second annotator (only by
+re-reading against the judge's own findings) — that's the honest next step
+before any batch counts as validated ground truth. FM-1.2 (Disobey Role
+Specification) and FM-3.2 (claimed-but-unexecuted verification, plus one new
+"zero verification attempted at all" flavor in batch 3) are the dominant
+organic findings across all three batches (14/24 and 10/24 traces
+respectively) — neither was targeted by any task design in any batch — and
+the judge's FM-1.2 recall, while improving batch over batch (0/3 → 3/6 →
+5/5), sits at 0.64 combined, still the weakest spot in judge coverage. **More
+importantly: after three batches with genuinely varied task designs, 9 of
+the 14 MAST modes have never organically fired once.** The task-content
+lever looks exhausted for this specific harness (AG2, `auto` speaker
+selection, `max_round=12`, no human in the loop) — see the recommendation at
+the end of `evals/dogfood/gold_labels_batch3.md`. Getting the remaining modes
+likely needs a structural harness change (longer/multi-session conversations,
+genuine context truncation, or a different framework), not a fourth batch of
+new task content on the same runner.
 
 ## Roadmap (build in this order)
 1. **[done] Step 1** — taxonomy.yaml, schema, scaffold, example trace.
@@ -115,13 +132,19 @@ rather than resolving this project's earlier documented recall gap.
    dataset, which is why Step 5 (fresh, unpublished traces) is the only way to
    get a contamination-clean number.
 5. **Step 5, in progress** — dogfood on real agent-loop runs; the results
-   become the launch essay. Two batches done, 16 AG2 traces combined, κ = 0.76
-   (95% CI [0.59, 0.94] — see "Current state"). CI is now off zero. Remaining
-   before this can anchor the essay: a second qualified annotator (or at
-   minimum a stricter self-consistency re-check of batch 1, since batch 2's
-   adjudication caught the pass-1 annotator missing half its own true FM-1.2
-   instances) — single-annotator ground truth is still the honest limitation,
-   not sample size anymore.
+   become the launch essay. Three batches done, 24 AG2 traces combined,
+   κ = 0.76 (95% CI [0.61, 0.88] — see "Current state"). CI is tight enough
+   to anchor a headline number. Two things remain before this is genuinely
+   done: (a) single-annotator ground truth — a second qualified annotator, or
+   at minimum a stricter self-consistency re-check of batch 1, since batches
+   2 and 3 both caught the pass-1 annotator missing true FM-1.2 instances;
+   (b) coverage — 9 of 14 MAST modes have never organically fired across 24
+   traces despite two batches of deliberately varied task designs aimed at
+   them, which points at a harness limitation rather than a task-design one.
+   A fourth batch should change the harness (longer conversations, real
+   context truncation, a different framework) rather than repeat the same
+   recipe with new task content — see `evals/dogfood/gold_labels_batch3.md`'s
+   closing recommendation.
 
 ## Conventions
 - Python ≥3.10, Pydantic v2, Typer CLI, `ruff` + `pytest`. Keep deps minimal.
