@@ -175,3 +175,52 @@ more of the same 19-record dataset is close to exhausted.
 
 Decision logged: see `gstack-decision-log` entries for `mast-lint`, 2026-07-16
 (AG2-then-AppWorld resolution).
+
+## Regenerating the AppWorld/GAIA parser results
+
+The judge's raw output for every run above is committed (`evals/raw_held_out_*.json`)
+— per the D3 reproducibility decision, re-scoring or re-running `eval-ci` on any of
+them never needs a new LLM call:
+
+```
+mast-lint eval-ci evals/raw_held_out_all_segmented.json --resamples 2000
+```
+
+The **input staging files** (`data/held_out_appworld.json`, `data/held_out_gaia.json`)
+are NOT committed — `data/` is gitignored, they're regenerable from the full dataset
+in one line each:
+
+```python
+import json
+d = json.load(open("data/MAD_human_labelled_dataset.json"))
+json.dump([r for r in d if r["mas_name"] == "AppWorld"],
+          open("data/held_out_appworld.json", "w"), indent=2)
+json.dump([r for r in d if r["mas_name"] == "GAIA"],
+          open("data/held_out_gaia.json", "w"), indent=2)
+```
+
+To re-run the judge itself (paid, only needed if the parser or the judge/taxonomy
+changes and you want a fresh number):
+
+```
+mast-lint eval data/held_out_appworld.json \
+  --raw-out evals/raw_held_out_appworld_segmented.json \
+  --out evals/held_out_appworld_segmented_report.json
+
+mast-lint eval data/held_out_gaia.json \
+  --raw-out evals/raw_held_out_gaia_segmented.json \
+  --out evals/held_out_gaia_segmented_report.json
+```
+
+**Parser coverage, so a future session doesn't have to re-derive it:**
+
+| trace | parser | expect |
+|---|---|---|
+| `mad-0`, `mad-5`, `mad-11` (AppWorld) | `_appworld_spans` | all 3 segment cleanly (29/73/68 spans) |
+| `mad-17` (GAIA, Magentic-One shape) | `_gaia_spans` | segments cleanly (13 spans) |
+| `mad-18` (GAIA, OpenManus-style log) | none | stays `raw_unsegmented` — no parser was written; see "GAIA, partially segmented" above for why |
+
+If GAIA's `mad-18` ever gets a parser, rebuild `evals/raw_held_out_all_segmented.json`
+by concatenating the AppWorld and GAIA segmented raw-results lists (see the
+`evals.load_raw_results` / `evals.save_raw_results` round-trip used to build the
+existing file) rather than hand-editing JSON.
