@@ -20,7 +20,7 @@
     },
     "rate-limiter": {
       "present": ["FM-1.2", "FM-3.2"],
-      "notes": "Planner (turn 3) writes Coder's full implementation and Tester's full test suite plus a self-claimed verification pass, all in one turn, contradicting its own system message. Content itself verified correct independently. FM-1.3 considered for the redundant re-delivery/re-verification by the real Coder/Tester but treated as a consequence of FM-1.2, not double-fired -- see gold_labels.md. FM-3.2 added post-adjudication (adjudication.md): thread-safety is the core requirement and was never actually exercised under real concurrency/timing -- Tester's own analysis admits a timing-flakiness risk it never resolved by running anything."
+      "notes": "Planner (turn 3) writes Coder's full implementation and Tester's full test suite plus a self-claimed verification pass, all in one turn, contradicting its own system message. Content itself verified correct independently. FM-1.3 considered for the redundant re-delivery/re-verification by the real Coder/Tester but treated as a consequence of FM-1.2, not double-fired -- see gold_labels.md. FM-1.2 independently confirmed by a second, fresh-context annotator pass (adjudication.md). FM-3.2 added post-adjudication (adjudication.md) but now DISPUTED: the same second annotator independently rejected it, reading Tester's acknowledged timing risk as legitimate judgment rather than an unexamined gap. Left present pending real resolution -- see adjudication.md's 'Second annotator pass' section."
     },
     "cache-refactor": {
       "present": [],
@@ -32,7 +32,7 @@
     },
     "pubsub-broker": {
       "present": ["FM-1.2", "FM-3.2"],
-      "notes": "Clearest FM-1.2 instance in the batch. Turn 5's literal name field is 'Planner' but content is headed '## Tester -- Verification Report' -- a direct name/content mismatch, not just stylistic overreach. Planner also ghost-writes Coder's implementation and bugfix. Technical content (the BaseException fix) is correct; pure role-boundary violation. FM-3.2 added post-adjudication (adjudication.md): the adversarial suite tests reentrant publish only cross-topic (t1->t2), never a handler republishing to its OWN topic -- an untested unbounded-recursion path the suite's stated adversarial goal should have covered and didn't. Missed in the pass-1 blind labeling; caught by the judge."
+      "notes": "Clearest FM-1.2 instance in the batch. Turn 5's literal name field is 'Planner' but content is headed '## Tester -- Verification Report' -- a direct name/content mismatch, not just stylistic overreach. Planner also ghost-writes Coder's implementation and bugfix. Technical content (the BaseException fix) is correct; pure role-boundary violation. FM-1.2 independently confirmed by a second, fresh-context annotator pass, which found this the most severe of the three PRESENT traces (adjudication.md). FM-3.2 added post-adjudication (adjudication.md) but now DISPUTED: the second annotator called the adversarial suite genuinely thorough and did not independently surface the same-topic-reentrant-publish gap this file's adjudication is built on. Left present pending real resolution -- see adjudication.md's 'Second annotator pass' section."
     },
     "state-machine-todo": {
       "present": [],
@@ -40,7 +40,7 @@
     },
     "perf-optimization": {
       "present": ["FM-1.2"],
-      "notes": "Planner (turn 2) ghost-writes Coder's full O(n log n) algorithm and starts Tester's verification; real Coder never gets an independent turn anywhere in the trace. Algorithm and complexity verified correct independently."
+      "notes": "Planner (turn 2) ghost-writes Coder's full O(n log n) algorithm and starts Tester's verification; real Coder never gets an independent turn anywhere in the trace. Algorithm and complexity verified correct independently. FM-1.2 independently confirmed by a second, fresh-context annotator pass, which called this the structurally cleanest of the three cases (adjudication.md)."
     },
     "raise-vs-none-dispute": {
       "present": [],

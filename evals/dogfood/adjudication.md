@@ -200,3 +200,64 @@ an assumed one.
 already states applies here too. A second annotator re-checking these same 3
 cells independently, blind to this writeup's verdicts, is the honest next
 step before citing the adjudicated 0.65 anywhere.
+
+## Second annotator pass (2026-07-16) — FM-3.2 now disputed
+
+A true second human annotator (the design doc's actual Approach C ask) isn't
+available. As a real, if partial, substitute for independence: a fresh
+subagent with **no memory of this conversation or any prior labeling
+session** was given only `taxonomy.yaml`, the three agents' system messages,
+and the raw transcripts of the 3 FM-1.2-present traces (`rate-limiter`,
+`pubsub-broker`, `perf-optimization`) — explicitly instructed not to read
+`gold_labels.md`, `gold_labels.json`, this file, or run `git log` on the
+repo, to avoid seeing any prior conclusion. This is a genuinely independent
+read (no shared memory, no exposure to prior verdicts), but it is still an AI
+annotator, not the human second annotator Approach C calls for — stated
+plainly, not conflated.
+
+**FM-1.2: full agreement, 3/3.** The second pass independently found the same
+role violation in all three traces, with evidence chains matching or
+exceeding what's documented above — e.g. for `pubsub-broker` it additionally
+noted Planner "signed off" on the task as final at least three times (turns
+3, 5, 6) before Tester spoke a substantive word, and independently caught
+turn 5's name/content mismatch. This meaningfully strengthens confidence in
+FM-1.2 and the taxonomy edit built on it (see below).
+
+**FM-3.2: disagreement, 0/2 — now DISPUTED, not resolved either direction.**
+The second pass independently rejected both FM-3.2 findings this file upheld:
+
+- `rate-limiter`: read Tester's acknowledged-but-dismissed timing-flakiness
+  risk as legitimate verification reasoning ("a reasonable, non-flaky
+  judgment call"), not an unexamined gap, and attributed the earlier shallow
+  Planner-authored "verification" to the FM-1.2 violation rather than
+  double-counting it as a separate failure.
+- `pubsub-broker`: called the adversarial suite "genuinely thorough
+  regardless of who nominally authored it" and reported no missed bug — it
+  did not independently surface the same-topic-reentrant-publish gap this
+  file's adjudication is built on.
+
+**Why this isn't being resolved by picking a side:** the FM-3.2 adjudication
+above was a single pass by one annotator (me) reasoning toward "the judge
+caught something real" — exactly the kind of motivated-reasoning risk
+`evals/adjudication.md`'s original methodology built an *adversarial* second
+pass to guard against, and no adversarial check was run against my own
+FM-3.2 reasoning before this. The second annotator's counter-arguments are
+specific and evidence-based, not lazy dismissals — this is a genuine,
+defensible disagreement between two single AI passes, not one side being
+sloppy. Arbitrarily picking a winner would launder that uncertainty into a
+false-confidence number.
+
+**Decision (2026-07-16):** leave `rate-limiter`/FM-3.2 and
+`pubsub-broker`/FM-3.2 marked **present** in `gold_labels.json` (i.e. the
+adjudicated 0.65 κ figure above is NOT rescored down), but flag both cells
+as **disputed** everywhere they're cited. Rationale: reverting to absent
+would just substitute one single-annotator's judgment (the fresh pass) for
+another's (mine) with no more claim to authority — neither is the human
+consensus this really needs. The honest state is "contested," not "resolved
+in favor of whichever pass ran last." A true tie-breaker needs either a real
+second human annotator, or — better — the underlying ambiguity itself needs
+resolving in `taxonomy.yaml`: is "verification that identifies and then
+reasons away a risk without empirically resolving it" FM-3.2 by definition,
+or a legitimate judgment call? That's a definitional question this project
+hasn't had to answer before now, not something one more annotation pass will
+settle by majority vote of two.

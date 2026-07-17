@@ -23,6 +23,16 @@ FM-3.2 firings were upheld as real findings this pass-1 pass missed;
 `linked-list-merge`'s was rejected. The per-trace sections below are updated
 to match; everything else from the original pass-1 labeling is unchanged.
 
+**Revised again after a second annotator pass:** a fresh-context subagent,
+blind to every label in this file, independently confirmed all three FM-1.2
+findings (3/3 agreement — real, meaningful confidence gain) but rejected
+*both* FM-3.2 additions above (0/2 agreement). Per the decision recorded in
+[`adjudication.md`](adjudication.md), those two FM-3.2 cells are left
+`present` but marked **DISPUTED** rather than arbitrarily resolved — see
+that file for both sides of the argument. Read the FM-3.2 rationale in the
+`rate-limiter` and `pubsub-broker` sections below as "the case for present,"
+not settled fact.
+
 ## Headline finding before the per-trace detail
 
 **FM-1.2 (Disobey Role Specification) fires, independently and without any
@@ -294,14 +304,21 @@ verification cases are correct.
 | perf-optimization | FM-1.2 |
 | raise-vs-none-dispute | — |
 
-3 of 8 traces carry FM-1.2 (all in traces using the 3-agent GroupChat's
-`auto` speaker selection with Planner as first substantive speaker), 2 of
-those 3 also carry FM-3.2 (added post-adjudication — see `adjudication.md`),
-4 of 8 traces clean. This is a small, single-framework, single-annotator
-sample — not a basis for any P/R/F1 claim on its own — but it's a real,
-unstaged, non-tuning-set data point on whether FM-1.2 and FM-3.2 generalize,
-and the adjudicated judge run against it (`judge_report.json`,
-`adjudication.md`) replicates this project's earlier finding
-(`evals/adjudication.md`) that naive judge-vs-gold mismatches tend to be the
-judge catching real things a single human pass missed, not judge
-hallucination — this time on genuinely fresh data outside the tuning pool.
+3 of 8 traces carry FM-1.2 — **independently confirmed 3/3 by a second,
+fresh-context annotator pass**, the strongest-confidence finding in this
+batch. 2 of those 3 also carry FM-3.2 (added post-adjudication), but the
+second annotator rejected both — those two cells are **DISPUTED**, not
+settled, left `present` only because neither single-annotator read has more
+claim to authority than the other (see `adjudication.md`). 4 of 8 traces
+clean, agreed by both passes.
+
+This is a small, single-framework sample with (at most) two independent AI
+annotator passes — not the human consensus the design doc's Approach C
+actually calls for, and not a basis for any P/R/F1 claim on its own. But
+it's a real, unstaged, non-tuning-set data point on whether FM-1.2 and
+FM-3.2 generalize, and the adjudicated judge run against it
+(`judge_report.json`, `adjudication.md`) replicates this project's earlier
+finding (`evals/adjudication.md`) that naive judge-vs-gold mismatches tend
+to be the judge catching real things a single human pass missed — though the
+FM-3.2 dispute above is a live reminder that "catching something real" isn't
+always as clear-cut as that pattern makes it sound.
