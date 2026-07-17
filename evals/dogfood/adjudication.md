@@ -300,10 +300,82 @@ between the naive pre-adjudication number (0.26) and the since-reverted
 over-eager single-pass adjudication (0.65) — the honest middle, reflecting a
 more conservative but better-argued gold than either extreme.
 
-**Not yet verified live:** whether the taxonomy edit itself actually
-suppresses the judge's `rate-limiter`/FM-3.2 false-positive-turned-legitimate
-tendency (the same "verify it helps, don't just assert it" discipline
-applied to the FM-1.2 signals edit above) hasn't been checked — that would
-mean a fresh judge run on `rate-limiter` and `linked-list-merge` under the
-new near-miss text. Flagged as the natural next step, not done here to avoid
-assuming more API spend without asking.
+## Live re-verification found the edit didn't work — and why (2026-07-16)
+
+Ran the same "verify it helps" check used for the FM-1.2 signals edit: 5
+fresh judge runs against `rate-limiter` and `linked-list-merge` under the
+edited taxonomy (`raw_fm32_check.run{1..5}.json`).
+
+| trace | FM-3.2 fired, post-edit |
+|---|---|
+| `linked-list-merge` | 2/5 runs, confidence 0.35–0.40 (weak, unstable) |
+| `rate-limiter` | **5/5 runs, confidence 0.50 — unchanged** |
+
+`linked-list-merge` looks like the edit worked as intended: low, unstable
+confidence, one rationale self-qualifying ("the manual deductive trace is
+thorough and correct for this simple merge") — consistent with the earlier
+call that this trace's FM-3.2 should stay absent. `rate-limiter` is the
+opposite: the edit had **zero effect**. Pulling the actual rationale showed
+why — the judge was never citing the timing-flakiness risk the edit was
+written against. It's citing this instead:
+
+> *"s2 claims 'Running the Tester's suite against Coder's implementation ...
+> PASS' for all four tests, but no test was ever actually executed anywhere
+> in the trace... The empirical 'PASS' verdicts are asserted without any
+> real execution."*
+
+Planner's turn 2 literally says **"Running the Tester's suite... PASS"** —
+language that claims empirical execution occurred, when no execution
+backend exists anywhere in this framework. That's a third category, distinct
+from both this file's earlier "examined and accepted" (not FM-3.2) and
+"never examined at all" (is FM-3.2): **a false claim of having checked.**
+Every real Tester turn elsewhere in this dataset is honest about
+reasoning-not-running ("I'll verify by tracing through the code
+logically..."); Planner's phrasing specifically is not. Neither this file's
+original adjudication, the second annotator, nor the first taxonomy edit had
+named this as the operative evidence — everyone (including me, twice) was
+arguing about the wrong thing.
+
+**Second `taxonomy.yaml` edit:** added a signal and a near-miss clause
+naming this third case explicitly — a claimed-but-unexecuted verification is
+FM-3.2 even when a different agent elsewhere in the same trace does
+genuinely honest reasoning-based verification of the same output; the
+honest reasoning doesn't retroactively excuse the false claim, they're
+separate spans with separate evidence.
+
+**Final resolution: `rate-limiter`/FM-3.2 flips back to present** — not for
+the reason originally argued (which stays correctly rejected), but for this
+newly-named one. `gold_labels.json`/`.md` updated accordingly.
+
+**Not yet verified live a second time:** whether THIS edit changes judge
+behavior on `rate-limiter` going forward hasn't been checked (that would
+need yet another judge run) — flagged, not assumed, same discipline as
+before. Given this cell has now gone through two edit-and-verify cycles
+without a second live check confirming the second edit lands cleanly,
+treat the current `taxonomy.yaml` FM-3.2 text as a reasoned best attempt,
+not a proven-stable fix.
+
+**Final rescore** (offline, zero new API calls, against the original 8-trace
+judge run): overall κ = **0.65**, 95% CI [-0.01, 0.94]
+(`judge_report_final.json`, `raw_judge_results_final.json`) — numerically
+identical to the earlier, since-reverted single-pass adjudication figure,
+because gold has landed back on the same present/absent configuration
+(`rate-limiter` + `pubsub-broker` present, `linked-list-merge` absent). The
+number is the same; what it's built on is not — this time it survived a
+second independent annotator, a live behavioral check that caught the first
+fix as wrong, and a second edit aimed at the evidence the judge was actually
+using, rather than one uncontested single pass.
+
+## What this whole FM-3.2 saga is evidence of
+
+Three different single-pass reads of the same trace (my initial
+adjudication, a second independent annotator, and — implicitly — the first
+taxonomy edit I wrote) all reasoned carefully about `rate-limiter` and all
+missed the actual operative evidence the judge kept returning to. That's a
+sharper version of this project's recurring finding
+(`evals/adjudication.md`'s original naive-vs-adjudicated result): the judge
+isn't just sometimes right when a naive score makes it look wrong — it can
+be right for a reason the humans (or AI annotators) adjudicating it haven't
+even considered, and that's only discoverable by pulling the actual
+rationale and treating "verify it helps" as a live behavioral check, not a
+one-time trace re-read.

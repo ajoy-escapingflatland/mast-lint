@@ -1,0 +1,196 @@
+[
+  {
+    "report": {
+      "trace_id": "mad-linked-list-merge",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s4"
+          ],
+          "rationale": "The Planner explicitly asked Tester to run the checklist against the code, but the Tester only manually traced execution by hand and declared all cases PASS without ever actually executing the provided unit tests; runtime issues would go undetected. (Low confidence, since the manual deductive trace is thorough and correct for this simple merge.)",
+          "confidence": 0.35
+        }
+      ],
+      "modes_fired": [
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-linked-list-merge",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-rate-limiter",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s2",
+            "s3",
+            "s4",
+            "s5"
+          ],
+          "rationale": "In s2 the Planner already produced the full Coder implementation, the full Tester test suite, AND a complete verification with PASS verdicts \u2014 doing the Coder's and Tester's jobs before they spoke. The later Coder (s3) and Tester (s4/s5) turns are near-identical restatements of content the Planner already generated.",
+          "confidence": 0.82
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s2",
+            "s4",
+            "s5"
+          ],
+          "rationale": "s2 claims 'Running the Tester's suite ... PASS' but no code is ever actually executed; verification is purely hand-tracing (s4/s5 explicitly 'tracing through the code logically'). For timing- and concurrency-sensitive tests, no empirical run was performed despite results being asserted as passing.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-rate-limiter",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  }
+]

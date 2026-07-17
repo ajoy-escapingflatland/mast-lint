@@ -288,6 +288,11 @@ failure_modes:
       - "A scenario squarely within a stated verification goal (e.g. an explicit
         adversarial-testing mandate) is never attempted by any agent, even though
         narrower or easier variants of it were"
+      - "An agent's language claims verification was actually EXECUTED ('running
+        the suite... PASS', 'ran the tests, all green') when no execution occurred
+        and nothing in the system is capable of executing anything — a false claim
+        of having checked, distinct from an agent that honestly reasons through
+        code without claiming to have run it"
     positive_example: >
       Code is produced and accepted with no tests written or executed at all.
     near_miss: >
@@ -298,7 +303,12 @@ failure_modes:
       require execution to trust) is a judgment call, not FM-3.2 — this is ordinary
       engineering practice. FM-3.2 requires a foreseeable, in-scope scenario or
       requirement that NO agent examined or reasoned about at all — not one that
-      was considered and knowingly accepted.
+      was considered and knowingly accepted. A THIRD case is distinct from both:
+      an agent CLAIMING empirical execution occurred ("ran the suite, all pass")
+      when it did not is FM-3.2 regardless of whether a different agent elsewhere
+      in the same trace does honest, well-reasoned verification of the same
+      output — the honest reasoning doesn't retroactively make the false claim
+      not a failure; they are separate spans.
     confused_with: [FM-3.1, FM-3.3]
 
   - id: FM-3.3
