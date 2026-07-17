@@ -56,7 +56,12 @@ traces that shaped them — `taxonomy.yaml` is now frozen against a genuinely
 held-out set (`evals/held_out.md`). Current honest number: κ ≈ 0.37 (95% CI
 [-0.10, 0.71]) on 4 properly-segmented held-out traces across two independent
 frameworks — real signal, nowhere near publishable (n far too small; the
-19-record dataset is close to exhausted). Full trail: `evals/held_out.md`.
+19-record dataset is close to exhausted). Full trail: `evals/held_out.md`. A
+contamination-ceiling writeup (`evals/contamination_ceiling.md`) distinguishes two
+channels: taxonomy-induction contamination (fixed by the freeze+held-out split
+above) vs. pretraining-exposure contamination (the MAD dataset is public and
+predates the judge model's cutoff, so no split of it can rule this out — only
+fresh dogfooded traces, i.e. Step 5, can).
 
 ## Roadmap (build in this order)
 1. **[done] Step 1** — taxonomy.yaml, schema, scaffold, example trace.
@@ -68,9 +73,12 @@ frameworks — real signal, nowhere near publishable (n far too small; the
    implemented; `examples/trace.example.json` regression case passes offline
    (see above).
 4. **Step 4 (the credibility moat), in progress** — see "Current state" above.
-   Remaining: a proper contamination-ceiling writeup, and either more
-   segmented-framework parsers or (better signal per unit effort) fresh
-   dogfooded traces — the 19-record MAD set is close to exhausted.
+   The contamination-ceiling writeup is done (`evals/contamination_ceiling.md`),
+   but it identifies pretraining-exposure contamination as structurally
+   unresolvable on the MAD dataset. Remaining: either one more segmented-framework
+   parser (diminishing returns — the 19-record MAD set is close to exhausted) or,
+   better signal per unit effort, fresh dogfooded traces — which also happens to
+   be the only way to get a contamination-clean number, not just more data.
 5. **Step 5** — dogfood on real agent-loop runs; the results become the launch essay.
 
 ## Conventions

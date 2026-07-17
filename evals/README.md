@@ -19,7 +19,10 @@ ground truth now comes from the MAD human-labelled dataset instead.
 - **`mad-0`, `mad-5`, `mad-11` (AppWorld) are the held-out set — frozen, never
   used to inform `taxonomy.yaml`.** See [`held_out.md`](held_out.md) for the
   freeze rule, the AG2-was-contaminated finding, and the raw_unsegmented caveat.
-- Report per-mode P/R/F1 + bootstrap CI and the contamination ceiling
-  before publishing any number — both still open (see `held_out.md`).
+- Report per-mode P/R/F1 + bootstrap CI (see `held_out.md`) and the contamination
+  ceiling (see [`contamination_ceiling.md`](contamination_ceiling.md)) before
+  publishing any number. Both are written up; the contamination ceiling itself is
+  only partially closable — see that file for the taxonomy-induction vs
+  pretraining-exposure distinction and what remains open.
 
 `examples/trace.example.json` is the first seed case (known labels: FM-3.1 + FM-3.2).
