@@ -1,0 +1,180 @@
+[
+  {
+    "report": {
+      "trace_id": "mad-rate-limiter",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s2"
+          ],
+          "rationale": "The Planner's single turn (s2) already contains the full Coder implementation, the complete Tester test suite, AND a verification section declaring 'Implementation accepted' \u2014 doing every downstream agent's job before Coder (s3) and Tester (s4/s5) ever produced their own turns, which then merely restate the Planner's already-written content.",
+          "confidence": 0.8
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s2",
+            "s4",
+            "s5"
+          ],
+          "rationale": "s2 claims 'Running the Tester's suite ... PASS' though no execution actually occurred, and the Tester explicitly states it verifies 'by tracing through the code logically rather than just skimming' (s4) \u2014 for a concurrency/timing-sensitive task the tests were never actually run, so results were only asserted by hand-tracing.",
+          "confidence": 0.6
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-rate-limiter",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          true
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-perf-optimization",
+      "findings": [],
+      "modes_fired": []
+    },
+    "gold": {
+      "trace_id": "mad-perf-optimization",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  }
+]

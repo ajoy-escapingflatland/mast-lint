@@ -168,6 +168,34 @@ detection cues — both are exactly what a second annotator or a taxonomy edit
 could sharpen, the same kind of disambiguation lever Lever-1 used for
 FM-1.1/FM-1.3.
 
+## Taxonomy edit applied and verified (2026-07-16)
+
+Added exactly those two signals to FM-1.2 in `taxonomy.yaml` (no version bump,
+matching how the Lever-1 edits handled it; framework-agnostic wording, no
+"Planner/Coder/Tester" naming, per the taxonomy's neutral-schema contract).
+Fair game under `held_out.md`'s freeze rule — this data was never part of the
+AppWorld/GAIA held-out set.
+
+Re-ran the same 5-run check (`raw_recall_check_post_edit.run{1..5}.json`)
+against the updated taxonomy to verify the edit actually helped rather than
+just asserting it should:
+
+| trace | FM-1.2 fired, pre-edit | FM-1.2 fired, post-edit |
+|---|---|---|
+| `rate-limiter` | 1/5 | **5/5** |
+| `perf-optimization` | 0/5 | **2/5** |
+
+Local mean recall over these two traces' full label universe (3 gold-positive
+cells per run: `rate-limiter`/FM-1.2, `rate-limiter`/FM-3.2,
+`perf-optimization`/FM-1.2) rose 0.40 → 0.80, mean κ 0.53 → 0.87 — **and
+precision stayed 1.00 in every run, before and after: zero new false
+positives introduced.** `rate-limiter` went from barely-detected to reliably
+caught every run. `perf-optimization` improved from complete blindness to
+2/5 — still imperfect, consistent with the structural read above (no
+near-duplicate-content tell available there, only "expected speaker never
+appeared," a weaker signal by construction), but a real, validated gain, not
+an assumed one.
+
 **Still a single-annotator adjudication** — the same limitation `gold_labels.md`
 already states applies here too. A second annotator re-checking these same 3
 cells independently, blind to this writeup's verdicts, is the honest next

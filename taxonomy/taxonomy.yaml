@@ -79,6 +79,12 @@ failure_modes:
     signals:
       - "A 'reviewer' agent starts writing new code instead of reviewing"
       - "An agent assumes authority/decisions reserved for another role"
+      - "One agent's turn contains content near-identical to a later turn attributed
+        to a different agent — the first agent already did the second's job before
+        they spoke"
+      - "A role implied by the task (e.g. a distinct implementer/verifier) never
+        produces an independent turn at all — its expected contribution is fully
+        subsumed by another agent"
     positive_example: >
       The tester agent, instead of testing, rewrites the implementation itself and
       declares it correct — collapsing the separation the system depended on.
