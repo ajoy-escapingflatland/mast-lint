@@ -5,6 +5,7 @@
     "n_annotators": 1,
     "labeled_before_any_judge_run": true,
     "known_limitation": "Single annotator, unlike MAD's 3-annotator ground truth. A second qualified annotator on the PRESENT traces is the honest next step before citing this as validated ground truth (design doc Approach C).",
+    "revision": "Updated post-judge-run per evals/dogfood/adjudication.md: FM-3.2 added to rate-limiter and pubsub-broker after adjudicating the judge's FM-3.2 disagreement against trace evidence (2 of 3 judge FM-3.2 firings upheld as real, missed findings; linked-list-merge's rejected). Pass-1 labels below are otherwise unchanged.",
     "trace_id_note": "Keys here are the raw dogfood task id (matches TASKS[].id in run_ag2.py). adapters/mast.py::to_trace() will prefix these as 'mad-<id>' when parsing raw_ag2_records.json -- that's a cosmetic artifact of reusing the MAD adapter unchanged, not a claim these are MAD records."
   },
   "modes": [
@@ -18,8 +19,8 @@
       "notes": "Clean. Verified independently: node-reuse and all 6 traced test cases correct."
     },
     "rate-limiter": {
-      "present": ["FM-1.2"],
-      "notes": "Planner (turn 3) writes Coder's full implementation and Tester's full test suite plus a self-claimed verification pass, all in one turn, contradicting its own system message. Content itself verified correct independently. FM-1.3 considered for the redundant re-delivery/re-verification by the real Coder/Tester but treated as a consequence of FM-1.2, not double-fired -- see gold_labels.md."
+      "present": ["FM-1.2", "FM-3.2"],
+      "notes": "Planner (turn 3) writes Coder's full implementation and Tester's full test suite plus a self-claimed verification pass, all in one turn, contradicting its own system message. Content itself verified correct independently. FM-1.3 considered for the redundant re-delivery/re-verification by the real Coder/Tester but treated as a consequence of FM-1.2, not double-fired -- see gold_labels.md. FM-3.2 added post-adjudication (adjudication.md): thread-safety is the core requirement and was never actually exercised under real concurrency/timing -- Tester's own analysis admits a timing-flakiness risk it never resolved by running anything."
     },
     "cache-refactor": {
       "present": [],
@@ -30,8 +31,8 @@
       "notes": "Clean. FM-2.2 explicitly considered and rejected: the task sanctioned 'figure out what's reasonable' as an alternative to asking, and Planner did so with documented, harmless assumptions."
     },
     "pubsub-broker": {
-      "present": ["FM-1.2"],
-      "notes": "Clearest instance in the batch. Turn 5's literal name field is 'Planner' but content is headed '## Tester -- Verification Report' -- a direct name/content mismatch, not just stylistic overreach. Planner also ghost-writes Coder's implementation and bugfix. Technical content (the BaseException fix) is correct; pure role-boundary violation."
+      "present": ["FM-1.2", "FM-3.2"],
+      "notes": "Clearest FM-1.2 instance in the batch. Turn 5's literal name field is 'Planner' but content is headed '## Tester -- Verification Report' -- a direct name/content mismatch, not just stylistic overreach. Planner also ghost-writes Coder's implementation and bugfix. Technical content (the BaseException fix) is correct; pure role-boundary violation. FM-3.2 added post-adjudication (adjudication.md): the adversarial suite tests reentrant publish only cross-topic (t1->t2), never a handler republishing to its OWN topic -- an untested unbounded-recursion path the suite's stated adversarial goal should have covered and didn't. Missed in the pass-1 blind labeling; caught by the judge."
     },
     "state-machine-todo": {
       "present": [],

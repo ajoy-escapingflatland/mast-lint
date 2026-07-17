@@ -26,3 +26,14 @@ ground truth now comes from the MAD human-labelled dataset instead.
   pretraining-exposure distinction and what remains open.
 
 `examples/trace.example.json` is the first seed case (known labels: FM-3.1 + FM-3.2).
+
+## Step 5 (dogfood) — first pass
+
+`dogfood/` is the first Step 5 batch: 8 fresh AG2 traces, contamination-clean
+by construction (never published, generated after `contamination_ceiling.md`
+was written specifically because MAD couldn't produce a clean number). See
+`dogfood/gold_labels.md` for the blind single-annotator labels and
+`dogfood/adjudication.md` for the judge run against them — adjudicated κ =
+0.65 (95% CI [-0.01, 0.94], n=8), replicating this project's earlier
+naive-vs-adjudicated pattern on genuinely fresh data. Single-annotator and
+n=8: informative, not publishable on its own.

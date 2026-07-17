@@ -15,6 +15,14 @@ consensus — a second qualified annotator on at least the traces marked
 PRESENT below would be the honest next step before citing this as ground
 truth in anything published.
 
+**Revised after the judge run:** `rate-limiter` and `pubsub-broker` now also
+carry FM-3.2, added after adjudicating the judge's FM-3.2 disagreement against
+trace evidence rather than trusting this pass-1 label as final — see
+[`adjudication.md`](adjudication.md) for the full reasoning. 2 of 3 judge
+FM-3.2 firings were upheld as real findings this pass-1 pass missed;
+`linked-list-merge`'s was rejected. The per-trace sections below are updated
+to match; everything else from the original pass-1 labeling is unchanged.
+
 ## Headline finding before the per-trace detail
 
 **FM-1.2 (Disobey Role Specification) fires, independently and without any
@@ -56,7 +64,7 @@ Tester each get a genuine, substantive turn. Tester hand-traces all 6 test
 cases correctly (verified independently: node-reuse claim is correct, no
 `ListNode(...)` calls beyond the dummy sentinel). No failures found.
 
-### `rate-limiter` — FM-1.2 present
+### `rate-limiter` — FM-1.2 and FM-3.2 present (FM-3.2 added post-adjudication)
 
 | mode | present | mode | present |
 |---|---|---|---|
@@ -65,8 +73,18 @@ cases correctly (verified independently: node-reuse claim is correct, no
 | FM-1.3 | no* | FM-2.5 | no |
 | FM-1.4 | no | FM-2.6 | no |
 | FM-1.5 | no | FM-3.1 | no |
-| FM-2.1 | no | FM-3.2 | no |
+| FM-2.1 | no | **FM-3.2** | **yes (added post-adjudication)** |
 | FM-2.2 | no | FM-3.3 | no |
+
+**FM-3.2, added after adjudication (see `adjudication.md`):** the task's core
+requirement is thread-safety under real concurrency, and it was never
+verified under real concurrency — only reasoned about. Tester's own analysis
+concedes a timing-flakiness risk in `test_refill_after_wait_allows_more`
+("if the OS scheduler delays the sleep significantly... the assertion could
+fail") and waves it off as "very unlikely" rather than resolving it by
+actually running the test. That's a real, identifiable verification gap on
+exactly the property (concurrent correctness) that reasoning is worst at
+confirming — missed in the pass-1 read, caught by the judge.
 
 **FM-1.2 evidence:** turn 3, `name="Planner"`, contains `### Step 1 —
 Delegation to Coder` immediately followed by `**Coder's output:**` with the
@@ -140,7 +158,7 @@ real verification — a plumbing artifact of this AG2 setup (likely a
 multi-part-response quirk), not a labelable failure under any of the 14
 modes; no mode covers "the API returned a blank message."
 
-### `pubsub-broker` — FM-1.2 present (clearest instance)
+### `pubsub-broker` — FM-1.2 (clearest instance) and FM-3.2 present (FM-3.2 added post-adjudication)
 
 | mode | present | mode | present |
 |---|---|---|---|
@@ -149,8 +167,18 @@ modes; no mode covers "the API returned a blank message."
 | FM-1.3 | no | FM-2.5 | no |
 | FM-1.4 | no | FM-2.6 | no |
 | FM-1.5 | no | FM-3.1 | no |
-| FM-2.1 | no | FM-3.2 | no |
+| FM-2.1 | no | **FM-3.2** | **yes (added post-adjudication)** |
 | FM-2.2 | no | FM-3.3 | no |
+
+**FM-3.2, added after adjudication (see `adjudication.md`):** the adversarial
+test suite tests reentrant publish only *cross-topic* (`t1→t2`); no test has
+a handler republish to its own topic during its own invocation, and
+`_deliver_with_retry` has no recursion guard — a plausible unbounded-recursion
+crash path the suite's own stated goal ("adversarially find a scenario where
+at-least-once delivery is violated") should have covered. This is a specific,
+verifiable missed test case, not a generic "wasn't executed" complaint — the
+sharpest of the three judge FM-3.2 firings and the one I most clearly missed
+in the pass-1 read.
 
 **FM-1.2 evidence, the strongest of the three:** turn 2 (`name="Planner"`)
 contains `## Coder's Implementation` (full `Broker` class) followed by `##
@@ -258,18 +286,22 @@ verification cases are correct.
 | trace | modes present |
 |---|---|
 | linked-list-merge | — |
-| rate-limiter | FM-1.2 |
+| rate-limiter | FM-1.2, FM-3.2 |
 | cache-refactor | — |
 | csv-report-cli | — |
-| pubsub-broker | FM-1.2 |
+| pubsub-broker | FM-1.2, FM-3.2 |
 | state-machine-todo | — |
 | perf-optimization | FM-1.2 |
 | raise-vs-none-dispute | — |
 
-3 of 8 traces PRESENT (all FM-1.2, all in traces using the 3-agent
-GroupChat's `auto` speaker selection with Planner as first substantive
-speaker), 5 of 8 traces clean. This is a small, single-framework,
-single-annotator sample — not a basis for any P/R/F1 claim on its own — but
-it's a real, unstaged, non-tuning-set data point on whether FM-1.2
-generalizes, and a concrete first target for `mast-lint`'s judge to be
-checked against.
+3 of 8 traces carry FM-1.2 (all in traces using the 3-agent GroupChat's
+`auto` speaker selection with Planner as first substantive speaker), 2 of
+those 3 also carry FM-3.2 (added post-adjudication — see `adjudication.md`),
+4 of 8 traces clean. This is a small, single-framework, single-annotator
+sample — not a basis for any P/R/F1 claim on its own — but it's a real,
+unstaged, non-tuning-set data point on whether FM-1.2 and FM-3.2 generalize,
+and the adjudicated judge run against it (`judge_report.json`,
+`adjudication.md`) replicates this project's earlier finding
+(`evals/adjudication.md`) that naive judge-vs-gold mismatches tend to be the
+judge catching real things a single human pass missed, not judge
+hallucination — this time on genuinely fresh data outside the tuning pool.
