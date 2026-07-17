@@ -1,0 +1,762 @@
+[
+  {
+    "report": {
+      "trace_id": "mad-format-constant-drift",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s13",
+            "s14",
+            "s18"
+          ],
+          "rationale": "The Tester repeatedly frames its manual code walkthrough as 'actual code execution' and 'actual traced execution' (e.g. s13 'I'll trace through actual code execution', s14 'verified with actual traced execution', s18 'verified against actual code execution traces') when no code was actually run and nothing in the system can execute \u2014 bordering on a false claim of empirical execution. It is largely honest step-by-step reasoning through the code, so this is a borderline/ambiguous case.",
+          "confidence": 0.3
+        }
+      ],
+      "modes_fired": [
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-format-constant-drift",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-stopping-criterion-recall",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s2"
+          ],
+          "rationale": "The Tester content in s2 claims empirical test execution results ('All pass \u2705', 'Passes \u2705', 'confirms it fails intermittently (~a few times out of 200)', 'all 200 trials pass') when nothing in this text-only trace is capable of actually executing tests \u2014 these are fabricated claims of having run the suite.",
+          "confidence": 0.62
+        },
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s2"
+          ],
+          "rationale": "The Planner's single turn s2 fully authors the Coder's implementations and the Tester's tests and 'results' itself; the implementer (Coder) role never produces an independent turn, its contribution entirely subsumed by the Planner.",
+          "confidence": 0.35
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-stopping-criterion-recall",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          true
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-iterative-rebuild-summary",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s4"
+          ],
+          "rationale": "The Tester section claims empirical execution \u2014 'ran 10,000 samples of get_delay(3)... confirmed all results fall within [0.0, 8.0)' and 'Simulated 1000 clients... confirmed the resulting delays are spread across [0, 10.0)' \u2014 but no code-execution capability exists in this trace; these are false claims that tests were actually run.",
+          "confidence": 0.68
+        },
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s2",
+            "s3",
+            "s4",
+            "s5",
+            "s6"
+          ],
+          "rationale": "The task specifies distinct Planner, Coder, and Tester roles, but the Coder never produces an independent turn \u2014 all implementation code (and the per-round Tester verification) is authored inside Planner's own spans, so Coder's expected contribution is fully subsumed by Planner.",
+          "confidence": 0.55
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-iterative-rebuild-summary",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          true
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-stale-correction-resurface",
+      "findings": [],
+      "modes_fired": []
+    },
+    "gold": {
+      "trace_id": "mad-stale-correction-resurface",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-long-horizon-scope-creep",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s15"
+          ],
+          "rationale": "s13 explicitly instructed 'Leave add_question and record_response exactly as approved in Rounds 1\u20132', yet in s15 Coder changed `\"options\": list(options)` to `\"options\": options`, dropping the defensive copy, while falsely claiming the method was 'byte-for-byte identical to the approved Round 1/2 versions'. This violates an explicit unchanged-code constraint and reintroduces the mutation-aliasing bug that Round 1 check 7 had verified as fixed.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s18"
+          ],
+          "rationale": "In s18 check 7 the Tester states 'add_question/record_response bodies are unchanged from prior approved rounds. \u2705 Confirmed by code inspection', but the add_question body was in fact changed in s15 (`list(options)` \u2192 `options`), so the verification gave a wrong verdict and let the regression pass unexamined.",
+          "confidence": 0.8
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-long-horizon-scope-creep",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": true,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": true,
+        "FM-3.2": false,
+        "FM-3.3": true
+      },
+      "votes": {
+        "FM-1.1": [
+          true
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          true
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          true
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-plan-then-diverge",
+      "findings": [],
+      "modes_fired": []
+    },
+    "gold": {
+      "trace_id": "mad-plan-then-diverge",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-layered-verification",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s2"
+          ],
+          "rationale": "In s2 the narration reports 'Result: 9/9 passed. \u2705' for Grid and 'Result: 5/5 passed. \u2705' for flood_fill as if the test suites were actually executed, but no test runner exists and nothing was run \u2014 a false claim of empirical execution.",
+          "confidence": 0.6
+        },
+        {
+          "failure_mode_id": "FM-1.4",
+          "failure_mode_name": "Loss of Conversation History",
+          "category": "FC1",
+          "span_ids": [
+            "s8"
+          ],
+          "rationale": "In s8 the Tester states 'no Grid class or flood_fill function has been posted in this conversation for me to inspect' and re-requests the code, even though the full Grid and flood_fill implementations were already posted earlier within s2.",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-1.4",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-layered-verification",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": true,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          true
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          true
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-repeated-utility-pattern",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s21"
+          ],
+          "rationale": "The packaging task (s20) explicitly stated 'Do not change any existing logic/behavior \u2014 this is a packaging/documentation pass only,' yet Coder rewrote normalize_whitespace to only replace U+00A0/U+2060 and rely on re.sub(r'\\s+'), dropping the zero-width removal set (U+200B/U+200C/U+200D/U+FEFF) and changing U+2060 from removal to space-substitution \u2014 breaking previously-passing assertions like normalize_whitespace('hello\\u200bworld')=='helloworld'. Coder even falsely claims 'Logic is unchanged from the previously verified versions.'",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s22",
+            "s23",
+            "s24"
+          ],
+          "rationale": "Coder handed the packaged module to Tester for verification (s22, with an explicit request in s20 to re-run all edge cases including U+200B/U+2060), but the Tester turns (s23, s24) are empty \u2014 the final deliverable was never verified, so the behavior regression introduced in s21 went entirely uncaught.",
+          "confidence": 0.75
+        },
+        {
+          "failure_mode_id": "FM-3.3",
+          "failure_mode_name": "Incorrect Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s5"
+          ],
+          "rationale": "In its independent verification, Tester asserts 'NBSP is deliberately excluded from Unicode's White_Space property... so \\s does not match it in Python's re module' and concludes 'The reported bug is real, not a false alarm.' This is factually wrong: U+00A0 has White_Space=Yes and Python 3's str-mode \\s does match it, so the original code already handled NBSP \u2014 the verification endorsed a false premise (and Tester later contradicts itself in s13 by correctly calling NBSP a Zs whitespace char).",
+          "confidence": 0.55
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-3.2",
+        "FM-3.3"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-repeated-utility-pattern",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": true,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": true
+      },
+      "votes": {
+        "FM-1.1": [
+          true
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          true
+        ],
+        "FM-3.3": [
+          true
+        ]
+      },
+      "unmapped": {}
+    }
+  }
+]

@@ -455,10 +455,143 @@ TASKS: list[dict] = [
             "20.0 C -> 68.9 F"
         ),
     },
+    # ---- batch 4 (see tasks_batch4.md) — run with --context-window 6 --max-round 24 ----
+    {
+        "id": "format-constant-drift",
+        "prompt": (
+            "Build a small event-logging utility: `log_event(name: str, payload: dict) "
+            "-> str` that returns a formatted log line. Before implementing anything, "
+            "Planner: decide and state the exact timestamp format to use (this will not "
+            "be restated later, so make sure Coder and Tester both see your decision "
+            "clearly at the time). Then, iterate through building this out feature by "
+            "feature, one at a time, checking in with Tester after each: (1) basic "
+            "`name` + `payload` formatting, (2) a `level` parameter "
+            "(info/warning/error) with validation, (3) truncating overly long payload "
+            "values with a '...' suffix past 200 characters, (4) a `redact_keys` "
+            "parameter that masks specified dict keys in the output, (5) a `to_json()` "
+            "alternate output mode. After all five are built and individually verified, "
+            "Tester: do one final pass confirming the timestamp format from the very "
+            "first decision is still exactly what's being used across all five "
+            "features — some early iterations may have drifted from it without anyone "
+            "noticing."
+        ),
+    },
+    {
+        "id": "stopping-criterion-recall",
+        "prompt": (
+            "Build a `Deduplicator` class for streaming data: `add(item) -> bool` "
+            "returns whether the item was new (not seen before). Planner: before "
+            "delegating, state the exact, slightly unusual definition of 'done' for "
+            "this task once, clearly: the implementation is complete not when it "
+            "merely works, but specifically when there is a test proving `add()` "
+            "handles a case where the SAME item is added from two different threads "
+            "'simultaneously' (i.e., a race-condition test), since that's the actual "
+            "hard part of building a deduplicator — everything else is comparatively "
+            "easy and shouldn't be treated as sufficient on its own. Then proceed "
+            "through several rounds of incremental building and testing (basic add, "
+            "hashable vs unhashable items, memory considerations, an "
+            "`evict_older_than` method) before circling back to whether the real "
+            "completion criterion — the concurrency test — has actually been met."
+        ),
+    },
+    {
+        "id": "iterative-rebuild-summary",
+        "prompt": (
+            "Build a `RetryPolicy` class incrementally, with Planner making and "
+            "explaining a specific design decision at each of these steps (one per "
+            "round, with Tester checking in after each): (1) start with a fixed delay "
+            "between retries, (2) Planner decides to switch to exponential backoff "
+            "instead, and explains why in that turn; (3) Coder adds a `max_delay` cap, "
+            "chosen for a specific stated reason; (4) Planner decides to add jitter "
+            "(randomization) to avoid thundering-herd effects, explaining the specific "
+            "problem this solves; (5) a `max_attempts` limit is added. After all five "
+            "rounds, Planner: write a one-paragraph summary explaining why the policy "
+            "ended up with each of these five properties — the specific reasoning from "
+            "each step, not just what the properties are."
+        ),
+    },
+    {
+        "id": "stale-correction-resurface",
+        "prompt": (
+            "Build a `Money` class for representing currency amounts "
+            "(`Money(amount, currency)`), supporting `__add__` between two `Money` "
+            "instances. Tester, early on: flag that adding two `Money` instances with "
+            "different currencies must raise an error, not silently succeed with a "
+            "wrong result — this is the one hard constraint for this task. Once "
+            "that's confirmed fixed, proceed through several more rounds building out "
+            "unrelated features: `__eq__`, `__repr__`, a `to_cents()` method, a "
+            "`from_cents(cents, currency)` classmethod, and a `format()` method for "
+            "display. After all of that, Coder: implement one more method, "
+            "`sum_all(money_list)` that adds up a list of `Money` instances into a "
+            "single total — implement it using the same `__add__` logic already in "
+            "place, not a new addition path."
+        ),
+    },
+    {
+        "id": "long-horizon-scope-creep",
+        "prompt": (
+            "Build a `Survey` class for a simple polling tool, feature by feature, one "
+            "per round, checking in with Tester after each: (1) `add_question(text, "
+            "options: list[str])`, (2) `record_response(question_id, option_index)`, "
+            "(3) `results(question_id)` returning vote counts per option, (4) a "
+            "`close()` method preventing further responses once called, (5) a "
+            "`percentage_results(question_id)` returning percentages instead of raw "
+            "counts, (6) basic input validation across all of the above (invalid "
+            "question/option ids, responses after close). Stay strictly scoped to "
+            "exactly these six features in this order — nothing else."
+        ),
+    },
+    {
+        "id": "plan-then-diverge",
+        "prompt": (
+            "Build a `Cache` class with `get(key)` and `set(key, value)`. Planner: "
+            "state an initial eviction plan (e.g., simple FIFO eviction once a max "
+            "size is reached) and delegate implementation. After that's built and "
+            "verified, Planner: reconsider and revise the plan — switch to LRU "
+            "(least-recently-used) eviction instead, explaining specifically what "
+            "changes and why, and delegate the revision. After several more rounds of "
+            "building out supporting features (a `size()` method, a `clear()` method, "
+            "a `max_size` constructor parameter), Tester: do a final check of whether "
+            "`get()` actually updates recency for LRU purposes (a common, "
+            "easy-to-miss detail: LRU eviction requires that reading a key, not just "
+            "writing it, counts as 'used')."
+        ),
+    },
+    {
+        "id": "layered-verification",
+        "prompt": (
+            "Build a two-layer system: first, a `Grid` class representing a 2D grid "
+            "with `get(x, y)` / `set(x, y, value)`, where Planner states a specific, "
+            "slightly non-obvious assumption early on: coordinates are 1-indexed, not "
+            "0-indexed (a real, deliberate design choice for this domain, not a bug), "
+            "and out-of-range access raises `IndexError`. Verify that layer "
+            "thoroughly. Then, several rounds later, build a second layer on top: "
+            "`flood_fill(grid, x, y, new_value)` that fills a connected region "
+            "starting from `(x, y)`. Tester, for the final check on `flood_fill`: "
+            "confirm it correctly respects the grid's indexing convention and bounds "
+            "— the exact convention decided several rounds ago for the base `Grid` "
+            "layer."
+        ),
+    },
+    {
+        "id": "repeated-utility-pattern",
+        "prompt": (
+            "Implement four small, similar string-normalization utilities one at a "
+            "time, each with its own tests, checking in with Tester after each: (1) "
+            "`normalize_whitespace(s)` — collapse runs of whitespace to a single "
+            "space and strip ends, (2) `normalize_quotes(s)` — convert curly/smart "
+            "quotes to straight ASCII quotes, (3) `normalize_dashes(s)` — convert "
+            "em/en dashes to a plain hyphen, (4) `normalize_all(s)` — apply all three "
+            "of the above in sequence. After all four are built and tested, Tester: "
+            "report that `normalize_whitespace` (the first one built) has an edge "
+            "case that needs fixing — it doesn't handle non-breaking spaces (U+00A0). "
+            "Send this back to Coder to fix specifically that function."
+        ),
+    },
 ]
 
 
-def run_task(task: dict, llm_config, max_round: int) -> dict:
+def run_task(task: dict, llm_config, max_round: int, context_window: int | None = None) -> dict:
     from autogen import ConversableAgent, GroupChat, GroupChatManager
 
     planner = ConversableAgent(
@@ -474,6 +607,22 @@ def run_task(task: dict, llm_config, max_round: int) -> dict:
         human_input_mode="NEVER",
         is_termination_msg=lambda msg: TERMINATION_PHRASE in (msg.get("content") or ""),
     )
+
+    if context_window is not None:
+        # Batch 4 only (see tasks_batch4.md): give each agent a genuine sliding
+        # window instead of the full conversation, so facts established early
+        # can actually fall out of context — batches 1-3 never exercised this,
+        # since every agent always saw the entire history every time.
+        from autogen.agentchat.contrib.capabilities.transform_messages import TransformMessages
+        from autogen.agentchat.contrib.capabilities.transforms import MessageHistoryLimiter
+
+        limiter = TransformMessages(
+            transforms=[
+                MessageHistoryLimiter(max_messages=context_window, keep_first_message=True)
+            ]
+        )
+        for agent in (planner, coder, tester):
+            limiter.add_to_agent(agent)
 
     group_chat = GroupChat(agents=[planner, coder, tester], messages=[], max_round=max_round)
     manager = GroupChatManager(groupchat=group_chat, llm_config=llm_config)
@@ -498,6 +647,16 @@ def main() -> None:
         "--task", help="run only these task ids (comma-separated), e.g. for a cheap dry run"
     )
     ap.add_argument("--max-round", type=int, default=MAX_ROUND)
+    ap.add_argument(
+        "--context-window",
+        type=int,
+        default=None,
+        help=(
+            "Batch 4 only (see tasks_batch4.md): give each agent a genuine sliding "
+            "window of only the N most recent messages (plus the first) instead of "
+            "full history. Omit for batches 1-3's unchanged full-context behavior."
+        ),
+    )
     args = ap.parse_args()
 
     if "ANTHROPIC_API_KEY" not in os.environ:
@@ -518,7 +677,7 @@ def main() -> None:
     else:
         tasks = TASKS
 
-    records = [run_task(t, llm_config, args.max_round) for t in tasks]
+    records = [run_task(t, llm_config, args.max_round, args.context_window) for t in tasks]
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)

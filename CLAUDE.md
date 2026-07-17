@@ -37,7 +37,7 @@ The flow is deliberately small:
   to where in the trace it happened. A judge that "feels" a failure but can't point
   to spans is a bug, not a finding.
 
-## Current state (Step 5 in progress — dogfood batch 3 done, task-content lever exhausted)
+## Current state (Step 5 in progress — dogfood batch 4 done, harness-change lever opened)
 Scaffold, taxonomy, schema, judge, segmenter (v0: whole-trace-as-one-window, see
 `segment.py`), report renderer, and the MAST/MAD dataset adapter (`adapters/mast.py`
 — NOT LangGraph; that framework was never built) all exist and work. `mast-lint
@@ -106,15 +106,30 @@ Specification) and FM-3.2 (claimed-but-unexecuted verification, plus one new
 organic findings across all three batches (14/24 and 10/24 traces
 respectively) — neither was targeted by any task design in any batch — and
 the judge's FM-1.2 recall, while improving batch over batch (0/3 → 3/6 →
-5/5), sits at 0.64 combined, still the weakest spot in judge coverage. **More
-importantly: after three batches with genuinely varied task designs, 9 of
-the 14 MAST modes have never organically fired once.** The task-content
-lever looks exhausted for this specific harness (AG2, `auto` speaker
-selection, `max_round=12`, no human in the loop) — see the recommendation at
-the end of `evals/dogfood/gold_labels_batch3.md`. Getting the remaining modes
-likely needs a structural harness change (longer/multi-session conversations,
-genuine context truncation, or a different framework), not a fourth batch of
-new task content on the same runner.
+5/5), sits at 0.64 combined, still the weakest spot in judge coverage. After
+three batches with genuinely varied task designs, 9 of the 14 MAST modes had
+never organically fired once — the task-content lever was exhausted for this
+specific harness (AG2, `auto` speaker selection, `max_round=12`, no human in
+the loop).
+
+**Batch 4 changed the harness instead — real sliding-window context
+truncation via AG2's `MessageHistoryLimiter`, plus `max_round` doubled to
+24 (`run_ag2.py --context-window`, `evals/dogfood/tasks_batch4.md`).**
+Adjudicated κ = 0.76 (95% CI [0.50, 0.87], n=8) — see
+`evals/dogfood/adjudication_batch4.md`. **Reported separately, not pooled
+into the combined 24-trace figure**, since this is a structurally different,
+deliberately harder harness. The headline result isn't the κ number: one
+trace (`long-horizon-scope-creep`) produced a real, organic regression caused
+by context truncation itself — a defensive list copy silently dropped when
+Coder reconstructed code from memory after the original scrolled out of
+view, falsely claimed "unchanged" by both Coder and a later Tester pass that
+never actually diffed against the true original (FM-1.1 + FM-3.3, both
+confirmed by direct text comparison, not inference). A second trace
+(`repeated-utility-pattern`) independently reproduced the same
+silently-broken-logic-plus-unverified-deliverable pattern. In 5 of 8 traces
+though, FM-1.2's usual early-consolidation habit denied the harness change a
+fair test — real signal, but FM-1.2 remains the dominant confound even on a
+different harness.
 
 ## Roadmap (build in this order)
 1. **[done] Step 1** — taxonomy.yaml, schema, scaffold, example trace.
@@ -132,19 +147,23 @@ new task content on the same runner.
    dataset, which is why Step 5 (fresh, unpublished traces) is the only way to
    get a contamination-clean number.
 5. **Step 5, in progress** — dogfood on real agent-loop runs; the results
-   become the launch essay. Three batches done, 24 AG2 traces combined,
-   κ = 0.76 (95% CI [0.61, 0.88] — see "Current state"). CI is tight enough
-   to anchor a headline number. Two things remain before this is genuinely
-   done: (a) single-annotator ground truth — a second qualified annotator, or
-   at minimum a stricter self-consistency re-check of batch 1, since batches
-   2 and 3 both caught the pass-1 annotator missing true FM-1.2 instances;
-   (b) coverage — 9 of 14 MAST modes have never organically fired across 24
-   traces despite two batches of deliberately varied task designs aimed at
-   them, which points at a harness limitation rather than a task-design one.
-   A fourth batch should change the harness (longer conversations, real
-   context truncation, a different framework) rather than repeat the same
-   recipe with new task content — see `evals/dogfood/gold_labels_batch3.md`'s
-   closing recommendation.
+   become the launch essay. Four batches done. Batches 1-3 (same harness,
+   varied task content) combine to κ = 0.76 (95% CI [0.61, 0.88], n=24 —
+   see "Current state"), CI tight enough to anchor a headline number. Batch 4
+   (new harness — real context truncation) reports separately at κ = 0.76
+   (95% CI [0.50, 0.87], n=8) and produced this project's most convincing
+   organic finding yet: a real regression caused by genuine context loss,
+   missed by verification that falsely claimed nothing had changed. Two
+   things remain before any of this is genuinely done: (a) single-annotator
+   ground truth — a second qualified annotator, or at minimum a stricter
+   self-consistency re-check of batch 1, since batches 2, 3, *and 4* have all
+   now caught the pass-1 annotator missing real findings on first read
+   (batch 4 worst of all: naive κ was 0.40 before adjudication); (b) coverage
+   — most of batch 4's traces still had FM-1.2's early-consolidation habit
+   deny the new harness a fair test, so a fifth batch combining the working
+   truncation harness with a stronger nudge against upfront fabrication (or
+   just more traces to get past FM-1.2's variance) is the natural next step,
+   not yet another structural pivot.
 
 ## Conventions
 - Python ≥3.10, Pydantic v2, Typer CLI, `ruff` + `pytest`. Keep deps minimal.

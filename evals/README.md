@@ -79,3 +79,33 @@ Getting organic coverage of the remaining modes likely needs a structural
 change to the harness itself (longer/multi-session conversations, a
 different framework, or genuine context truncation), not another batch of
 new task content on the same runner.
+
+## Step 5, batch 4 — a genuinely different harness (reported separately)
+
+**Batch 4 changes the harness itself**, not just task content, per the
+recommendation above: `run_ag2.py --context-window 6 --max-round 24` gives
+each agent a real sliding window (AG2's `MessageHistoryLimiter`, confirmed
+to actually trim history both offline and in-trace) instead of full
+conversation history, with `max_round` doubled to give the window room to
+matter. See `dogfood/tasks_batch4.md` for the harness design and the 8 tasks
+built around it, `dogfood/gold_labels_batch4.md` for blind labels, and
+`dogfood/adjudication_batch4.md` for the judge run — adjudicated **κ = 0.76
+(95% CI [0.50, 0.87], n=8)**.
+
+**This number is reported separately, not pooled into the combined 24-trace
+figure above** — it's a structurally different, deliberately harder harness
+(agents genuinely lose context, not just a different task distribution), so
+combining it would silently change what the headline number means without
+changing its label.
+
+Batch 4's biggest finding isn't a κ number, though: `long-horizon-scope-creep`
+produced a real, organic regression caused by context truncation itself — a
+defensive list copy silently dropped when Coder reconstructed "the full
+class" after the original code scrolled out of its window, falsely claimed
+"unchanged" by both Coder and a later Tester pass that never actually diffed
+against the true original (FM-1.1 + FM-3.3, both confirmed by direct text
+comparison). `repeated-utility-pattern` independently reproduced the same
+"silently-broken logic pass, final verification never happens" pattern. In 5
+of 8 traces, though, FM-1.2's usual early-consolidation habit meant the
+targeted mechanism never got a fair test — the harness change is real and
+working, but FM-1.2 remains the dominant confound even here.
