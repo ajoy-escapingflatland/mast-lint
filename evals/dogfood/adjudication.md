@@ -107,12 +107,66 @@ first time that pattern has replicated on genuinely fresh, non-tuning-set
 data, in a framework (AG2) with zero taxonomy-tuning exposure — real evidence
 this isn't an artifact specific to the original 14-trace pool.
 
-**Still open:** FM-1.2's recall gap (missed `rate-limiter` and
-`perf-optimization` entirely, both structurally identical to the caught
-`pubsub-broker` case) is a separate question from this adjudication — it's
-about judge sensitivity, not a gold-label disagreement, since gold and the
-adjudicated truth agree those cells are real positives. Not investigated
-here; flagged for whoever picks this up next.
+## FM-1.2 recall gap — investigated (2026-07-16)
+
+Not a gold-label disagreement (gold and the judge agree these cells are real
+positives) — a judge-sensitivity question, investigated separately.
+
+**Structural asymmetry, found for free by comparing spans:** `pubsub-broker`
+has a span where the literal `agent=` metadata says `Planner` while the
+content itself opens `## Tester — Verification Report` — a bare
+metadata/content contradiction the judge can cite without inference. In
+`rate-limiter` and `perf-optimization`, the same underlying violation (Planner
+ghost-writing Coder's/Tester's turns) only shows up as inline markdown
+sub-headers within one Planner span (`**Coder:**` / `**Tester:**`) — no span
+carries a self-contradicting `agent=` label. Two rules in
+`prompts/judge_system.md` plausibly make that difference decisive: Rule 2
+("prefer precision over recall — report a mode only when the trace clearly
+exhibits it") and Rule 4 ("one finding per distinct failure... choose the
+most specific mode"), which in `rate-limiter`'s case seems to have pointed
+the judge at FM-3.2 instead of also firing FM-1.2 for the same span.
+
+**Tested against single-run luck, not just inferred:** 5 additional paid runs
+(`claude-opus-4-8`, `evals/dogfood/raw_recall_check.run{1..5}.json`) against
+just these two traces, reusing `evals.aggregate_runs` per this project's
+established multi-run-verification practice
+(`evals/adjudication_lever1.md`).
+
+| trace | FM-1.2 fired |
+|---|---|
+| `rate-limiter` | 1/5 runs |
+| `perf-optimization` | 0/5 runs |
+
+**`perf-optimization` (0/5) is the stronger result — not just "usually
+missed," never caught across 5 independent stochastic draws.** It's also the
+structurally hardest case: `Coder` never gets a real turn anywhere in this
+trace, so there's no independent Coder-authored span to compare against
+Planner's ghost-written version and notice near-duplication — the only
+available signal is "an agent named Coder never spoke at all," which nothing
+in the prompt surfaces as a checkable fact (the judge sees per-span `agent=`
+labels, not a roster of who was expected to participate).
+
+**`rate-limiter`'s one hit (run 2, confidence 0.4)** is real signal the
+judge *can* find this pattern without a metadata tell, just rarely and
+weakly — its rationale independently reconstructs the same evidence I did:
+*"the Planner's message (s2) embeds fully-formed 'Coder's output' code and
+'Tester's output' tests and a completed verification step itself... before
+those agents actually respond."* Confidence 0.4 is well below that same
+run's FM-3.2 confidence (0.55) on the same trace — consistent with the
+judge treating it as the weaker, more inferential call.
+
+**Conclusion:** the gap is a real, mechanism-level detection weakness, not
+this run's bad luck — the judge is systematically better at catching FM-1.2
+when there's a hard structural tell (name/content mismatch) than when it
+requires inferring role-impersonation from content duplication alone,
+independent of whether a competing finding (FM-3.2) is available to explain
+the anomaly instead. If this generalizes, it's a concrete, testable taxonomy
+lever: `taxonomy.yaml`'s FM-1.2 `signals` list doesn't currently mention
+"content near-identical to a later turn attributed to a different agent" or
+"an agent implied by the task never produces an independent turn" as
+detection cues — both are exactly what a second annotator or a taxonomy edit
+could sharpen, the same kind of disambiguation lever Lever-1 used for
+FM-1.1/FM-1.3.
 
 **Still a single-annotator adjudication** — the same limitation `gold_labels.md`
 already states applies here too. A second annotator re-checking these same 3
