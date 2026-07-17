@@ -247,17 +247,63 @@ defensible disagreement between two single AI passes, not one side being
 sloppy. Arbitrarily picking a winner would launder that uncertainty into a
 false-confidence number.
 
-**Decision (2026-07-16):** leave `rate-limiter`/FM-3.2 and
-`pubsub-broker`/FM-3.2 marked **present** in `gold_labels.json` (i.e. the
-adjudicated 0.65 κ figure above is NOT rescored down), but flag both cells
-as **disputed** everywhere they're cited. Rationale: reverting to absent
-would just substitute one single-annotator's judgment (the fresh pass) for
-another's (mine) with no more claim to authority — neither is the human
-consensus this really needs. The honest state is "contested," not "resolved
-in favor of whichever pass ran last." A true tie-breaker needs either a real
-second human annotator, or — better — the underlying ambiguity itself needs
-resolving in `taxonomy.yaml`: is "verification that identifies and then
-reasons away a risk without empirically resolving it" FM-3.2 by definition,
-or a legitimate judgment call? That's a definitional question this project
-hasn't had to answer before now, not something one more annotation pass will
-settle by majority vote of two.
+**Decision (2026-07-16, superseded below):** left both cells marked
+**disputed** rather than picking a side arbitrarily — a tie-breaker needed
+either a real second human annotator, or the underlying ambiguity resolved
+in `taxonomy.yaml` itself: is "verification that identifies and reasons away
+a risk without empirically resolving it" FM-3.2 by definition, or a
+legitimate judgment call? That's a definitional question, not something one
+more annotation pass settles by majority vote of two.
+
+## Resolved: taxonomy.yaml near-miss edit (2026-07-16)
+
+Re-examined both disputed cells against a single, generalizable question
+rather than re-litigating each in isolation: **was the gap something an
+agent identified, reasoned about, and knowingly accepted — or something no
+agent ever examined at all?** Those are different in kind, and re-reading
+both traces with that question in mind resolves them *differently*, which is
+itself evidence the distinction is real rather than a rationalization:
+
+- **`rate-limiter`: the risk was examined.** Tester didn't just wave at
+  uncertainty — it computed a concrete margin ("0.15s sleep vs 0.1s/token
+  gives enough margin that this is very unlikely to flake") and the actual
+  task requirement the risk touches (thread-safety) is independently,
+  deductively provable from the lock's structure regardless of that one
+  test's timing sensitivity. This is what a careful human code reviewer
+  does: identify a low-probability edge case, reason about its actual
+  materiality, and accept it. **FM-3.2 reverts to absent.**
+- **`pubsub-broker`: the gap was never examined.** No agent, across all 12
+  turns, ever considered same-topic reentrant publish — not reasoned about
+  and accepted, simply absent from a test suite whose own explicit mandate
+  was to adversarially hunt for exactly this class of gap. There is no
+  "acceptable margin" argument anywhere in the trace for this scenario
+  because nobody ever raised it. **FM-3.2 stays present.**
+
+Encoded this distinction directly in `taxonomy/taxonomy.yaml`'s FM-3.2
+`near_miss` (plus a new `signals` entry) so it applies going forward, not
+just to these two traces: a risk that is *identified, quantified, and
+knowingly accepted* is a judgment call, not FM-3.2; FM-3.2 requires a
+foreseeable, in-scope scenario that no agent examined or reasoned about at
+all. No version bump, consistent with how the Lever-1 and FM-1.2-signal
+edits were handled.
+
+`gold_labels.json`/`.md` updated to the settled state: `rate-limiter`
+present = `[FM-1.2]` only; `pubsub-broker` present = `[FM-1.2, FM-3.2]`
+unchanged. Neither cell is DISPUTED anymore.
+
+**Rescored (offline, zero new API calls)** against the *original* pre-edit
+judge run (`raw_judge_results.json` — this taxonomy edit postdates that run,
+so it doesn't reflect how the edited judge would now score `rate-limiter`;
+see caveat below): overall κ = **0.48**, 95% CI [-0.03, 0.94]
+(`judge_report_settled.json`, `raw_judge_results_settled.json`). This sits
+between the naive pre-adjudication number (0.26) and the since-reverted
+over-eager single-pass adjudication (0.65) — the honest middle, reflecting a
+more conservative but better-argued gold than either extreme.
+
+**Not yet verified live:** whether the taxonomy edit itself actually
+suppresses the judge's `rate-limiter`/FM-3.2 false-positive-turned-legitimate
+tendency (the same "verify it helps, don't just assert it" discipline
+applied to the FM-1.2 signals edit above) hasn't been checked — that would
+mean a fresh judge run on `rate-limiter` and `linked-list-merge` under the
+new near-miss text. Flagged as the natural next step, not done here to avoid
+assuming more API spend without asking.

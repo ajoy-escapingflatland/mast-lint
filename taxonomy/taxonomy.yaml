@@ -285,11 +285,20 @@ failure_modes:
     signals:
       - "No agent tests, validates, or reviews the result"
       - "Only a subset of outputs/requirements is checked"
+      - "A scenario squarely within a stated verification goal (e.g. an explicit
+        adversarial-testing mandate) is never attempted by any agent, even though
+        narrower or easier variants of it were"
     positive_example: >
       Code is produced and accepted with no tests written or executed at all.
     near_miss: >
       If verification DID happen but reached the wrong conclusion, that is FM-3.3
-      (Incorrect Verification), not absence of verification.
+      (Incorrect Verification), not absence of verification. A risk that was
+      IDENTIFIED, quantified, and consciously accepted with concrete justification
+      (e.g. a computed margin, or a structural/deductive argument that doesn't
+      require execution to trust) is a judgment call, not FM-3.2 — this is ordinary
+      engineering practice. FM-3.2 requires a foreseeable, in-scope scenario or
+      requirement that NO agent examined or reasoned about at all — not one that
+      was considered and knowingly accepted.
     confused_with: [FM-3.1, FM-3.3]
 
   - id: FM-3.3

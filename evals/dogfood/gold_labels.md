@@ -26,12 +26,17 @@ to match; everything else from the original pass-1 labeling is unchanged.
 **Revised again after a second annotator pass:** a fresh-context subagent,
 blind to every label in this file, independently confirmed all three FM-1.2
 findings (3/3 agreement — real, meaningful confidence gain) but rejected
-*both* FM-3.2 additions above (0/2 agreement). Per the decision recorded in
-[`adjudication.md`](adjudication.md), those two FM-3.2 cells are left
-`present` but marked **DISPUTED** rather than arbitrarily resolved — see
-that file for both sides of the argument. Read the FM-3.2 rationale in the
-`rate-limiter` and `pubsub-broker` sections below as "the case for present,"
-not settled fact.
+*both* FM-3.2 additions above (0/2 agreement). That disagreement was left
+DISPUTED rather than arbitrarily resolved.
+
+**Settled (2026-07-16):** the dispute is resolved by a `taxonomy.yaml` edit
+sharpening FM-3.2's near-miss boundary — see [`adjudication.md`](adjudication.md)
+for the full reasoning. The two cells resolve *differently*, not uniformly:
+`rate-limiter`'s flagged risk was identified, quantified, and knowingly
+accepted (a judgment call, not FM-3.2 — now **absent**); `pubsub-broker`'s
+same-topic-recursion gap was never examined by anyone at all despite being
+squarely inside the suite's own adversarial mandate (textbook FM-3.2 — stays
+**present**). The per-trace sections below reflect the settled state.
 
 ## Headline finding before the per-trace detail
 
@@ -74,7 +79,7 @@ Tester each get a genuine, substantive turn. Tester hand-traces all 6 test
 cases correctly (verified independently: node-reuse claim is correct, no
 `ListNode(...)` calls beyond the dummy sentinel). No failures found.
 
-### `rate-limiter` — FM-1.2 and FM-3.2 present (FM-3.2 added post-adjudication)
+### `rate-limiter` — FM-1.2 present; FM-3.2 settled absent
 
 | mode | present | mode | present |
 |---|---|---|---|
@@ -83,18 +88,21 @@ cases correctly (verified independently: node-reuse claim is correct, no
 | FM-1.3 | no* | FM-2.5 | no |
 | FM-1.4 | no | FM-2.6 | no |
 | FM-1.5 | no | FM-3.1 | no |
-| FM-2.1 | no | **FM-3.2** | **yes (added post-adjudication)** |
+| FM-2.1 | no | FM-3.2 | no (settled, see below) |
 | FM-2.2 | no | FM-3.3 | no |
 
-**FM-3.2, added after adjudication (see `adjudication.md`):** the task's core
-requirement is thread-safety under real concurrency, and it was never
-verified under real concurrency — only reasoned about. Tester's own analysis
-concedes a timing-flakiness risk in `test_refill_after_wait_allows_more`
-("if the OS scheduler delays the sleep significantly... the assertion could
-fail") and waves it off as "very unlikely" rather than resolving it by
-actually running the test. That's a real, identifiable verification gap on
-exactly the property (concurrent correctness) that reasoning is worst at
-confirming — missed in the pass-1 read, caught by the judge.
+**FM-3.2 history:** added post-adjudication, disputed by a second annotator,
+now **settled absent** by a `taxonomy.yaml` near-miss edit (see
+`adjudication.md`). Tester's flagged timing risk in
+`test_refill_after_wait_allows_more` ("if the OS scheduler delays the sleep
+significantly... the assertion could fail, but 0.15s sleep vs 0.1s/token
+gives comfortable margin") is a risk that was *identified, quantified, and
+knowingly accepted* — not an unexamined gap, ordinary engineering judgment.
+The actual task requirement this risk touches (thread-safety) has an
+independent deductive proof anyway: `allow()`'s single lock makes
+refill+check+decrement atomic by construction, which doesn't need execution
+to trust. Contrast with `pubsub-broker` below, where the equivalent risk was
+never examined at all — that's the line the taxonomy edit draws.
 
 **FM-1.2 evidence:** turn 3, `name="Planner"`, contains `### Step 1 —
 Delegation to Coder` immediately followed by `**Coder's output:**` with the
@@ -168,7 +176,7 @@ real verification — a plumbing artifact of this AG2 setup (likely a
 multi-part-response quirk), not a labelable failure under any of the 14
 modes; no mode covers "the API returned a blank message."
 
-### `pubsub-broker` — FM-1.2 (clearest instance) and FM-3.2 present (FM-3.2 added post-adjudication)
+### `pubsub-broker` — FM-1.2 (clearest instance) and FM-3.2 both settled present
 
 | mode | present | mode | present |
 |---|---|---|---|
@@ -177,18 +185,23 @@ modes; no mode covers "the API returned a blank message."
 | FM-1.3 | no | FM-2.5 | no |
 | FM-1.4 | no | FM-2.6 | no |
 | FM-1.5 | no | FM-3.1 | no |
-| FM-2.1 | no | **FM-3.2** | **yes (added post-adjudication)** |
+| FM-2.1 | no | **FM-3.2** | **yes (settled, see below)** |
 | FM-2.2 | no | FM-3.3 | no |
 
-**FM-3.2, added after adjudication (see `adjudication.md`):** the adversarial
-test suite tests reentrant publish only *cross-topic* (`t1→t2`); no test has
-a handler republish to its own topic during its own invocation, and
-`_deliver_with_retry` has no recursion guard — a plausible unbounded-recursion
-crash path the suite's own stated goal ("adversarially find a scenario where
-at-least-once delivery is violated") should have covered. This is a specific,
-verifiable missed test case, not a generic "wasn't executed" complaint — the
-sharpest of the three judge FM-3.2 firings and the one I most clearly missed
-in the pass-1 read.
+**FM-3.2 history:** added post-adjudication, disputed by a second annotator
+(who didn't independently surface this specific gap), now **settled present**
+by a `taxonomy.yaml` near-miss edit (see `adjudication.md`) that distinguishes
+"a risk that was examined and knowingly accepted" (not FM-3.2, see
+`rate-limiter` above) from "a scenario never examined at all" (is FM-3.2).
+This trace is the latter: the adversarial test suite tests reentrant publish
+only *cross-topic* (`t1→t2`); no test has a handler republish to its own
+topic during its own invocation, and `_deliver_with_retry` has no recursion
+guard — a plausible unbounded-recursion crash path the suite's own stated
+goal ("adversarially find a scenario where at-least-once delivery is
+violated") should have covered and simply never attempted. No agent, at any
+point across 12 turns, considered and reasoned about this scenario the way
+`rate-limiter`'s Tester reasoned about its timing risk — it just never came
+up. That's the operational difference the edit encodes.
 
 **FM-1.2 evidence, the strongest of the three:** turn 2 (`name="Planner"`)
 contains `## Coder's Implementation` (full `Broker` class) followed by `##
@@ -296,7 +309,7 @@ verification cases are correct.
 | trace | modes present |
 |---|---|
 | linked-list-merge | — |
-| rate-limiter | FM-1.2, FM-3.2 |
+| rate-limiter | FM-1.2 |
 | cache-refactor | — |
 | csv-report-cli | — |
 | pubsub-broker | FM-1.2, FM-3.2 |
@@ -306,11 +319,11 @@ verification cases are correct.
 
 3 of 8 traces carry FM-1.2 — **independently confirmed 3/3 by a second,
 fresh-context annotator pass**, the strongest-confidence finding in this
-batch. 2 of those 3 also carry FM-3.2 (added post-adjudication), but the
-second annotator rejected both — those two cells are **DISPUTED**, not
-settled, left `present` only because neither single-annotator read has more
-claim to authority than the other (see `adjudication.md`). 4 of 8 traces
-clean, agreed by both passes.
+batch. 1 of those 3 (`pubsub-broker`) also carries FM-3.2; the second
+annotator disputed this (and a since-reverted `rate-limiter` finding), and
+the dispute is now settled by a `taxonomy.yaml` edit that distinguishes an
+examined-and-accepted risk (not FM-3.2) from a scenario nobody ever examined
+at all (is FM-3.2) — see `adjudication.md`. 5 of 8 traces clean.
 
 This is a small, single-framework sample with (at most) two independent AI
 annotator passes — not the human consensus the design doc's Approach C
@@ -319,6 +332,7 @@ it's a real, unstaged, non-tuning-set data point on whether FM-1.2 and
 FM-3.2 generalize, and the adjudicated judge run against it
 (`judge_report.json`, `adjudication.md`) replicates this project's earlier
 finding (`evals/adjudication.md`) that naive judge-vs-gold mismatches tend
-to be the judge catching real things a single human pass missed — though the
-FM-3.2 dispute above is a live reminder that "catching something real" isn't
-always as clear-cut as that pattern makes it sound.
+to be the judge catching real things a single human pass missed — with the
+now-settled FM-3.2 dispute as a live reminder that "catching something
+real" isn't always as clear-cut as that pattern makes it sound, and that
+resolving it can sharpen the taxonomy itself rather than just the label.

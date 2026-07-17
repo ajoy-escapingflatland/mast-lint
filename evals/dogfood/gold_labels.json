@@ -19,8 +19,8 @@
       "notes": "Clean. Verified independently: node-reuse and all 6 traced test cases correct."
     },
     "rate-limiter": {
-      "present": ["FM-1.2", "FM-3.2"],
-      "notes": "Planner (turn 3) writes Coder's full implementation and Tester's full test suite plus a self-claimed verification pass, all in one turn, contradicting its own system message. Content itself verified correct independently. FM-1.3 considered for the redundant re-delivery/re-verification by the real Coder/Tester but treated as a consequence of FM-1.2, not double-fired -- see gold_labels.md. FM-1.2 independently confirmed by a second, fresh-context annotator pass (adjudication.md). FM-3.2 added post-adjudication (adjudication.md) but now DISPUTED: the same second annotator independently rejected it, reading Tester's acknowledged timing risk as legitimate judgment rather than an unexamined gap. Left present pending real resolution -- see adjudication.md's 'Second annotator pass' section."
+      "present": ["FM-1.2"],
+      "notes": "Planner (turn 3) writes Coder's full implementation and Tester's full test suite plus a self-claimed verification pass, all in one turn, contradicting its own system message. Content itself verified correct independently. FM-1.3 considered for the redundant re-delivery/re-verification by the real Coder/Tester but treated as a consequence of FM-1.2, not double-fired -- see gold_labels.md. FM-1.2 independently confirmed by a second, fresh-context annotator pass (adjudication.md). FM-3.2 added post-adjudication, then disputed by the second annotator, now SETTLED absent (taxonomy.yaml near_miss edit, 2026-07-16): the flagged timing risk was identified and quantified with a concrete margin (0.15s sleep vs 0.1s/token), and the actual requirement (thread-safety) is independently proven by the lock's structure -- a considered, knowingly-accepted risk, not an unexamined gap. See adjudication.md."
     },
     "cache-refactor": {
       "present": [],
@@ -32,7 +32,7 @@
     },
     "pubsub-broker": {
       "present": ["FM-1.2", "FM-3.2"],
-      "notes": "Clearest FM-1.2 instance in the batch. Turn 5's literal name field is 'Planner' but content is headed '## Tester -- Verification Report' -- a direct name/content mismatch, not just stylistic overreach. Planner also ghost-writes Coder's implementation and bugfix. Technical content (the BaseException fix) is correct; pure role-boundary violation. FM-1.2 independently confirmed by a second, fresh-context annotator pass, which found this the most severe of the three PRESENT traces (adjudication.md). FM-3.2 added post-adjudication (adjudication.md) but now DISPUTED: the second annotator called the adversarial suite genuinely thorough and did not independently surface the same-topic-reentrant-publish gap this file's adjudication is built on. Left present pending real resolution -- see adjudication.md's 'Second annotator pass' section."
+      "notes": "Clearest FM-1.2 instance in the batch. Turn 5's literal name field is 'Planner' but content is headed '## Tester -- Verification Report' -- a direct name/content mismatch, not just stylistic overreach. Planner also ghost-writes Coder's implementation and bugfix. Technical content (the BaseException fix) is correct; pure role-boundary violation. FM-1.2 independently confirmed by a second, fresh-context annotator pass, which found this the most severe of the three PRESENT traces (adjudication.md). FM-3.2 added post-adjudication, disputed by the second annotator, now SETTLED present (taxonomy.yaml near_miss edit, 2026-07-16): same-topic reentrant publish was never examined by any agent at all -- not reasoned about and accepted, absent from the suite entirely despite being squarely inside its own stated adversarial mandate. Distinguished from rate-limiter's now-absent FM-3.2 by that examined-vs-never-examined line. See adjudication.md."
     },
     "state-machine-todo": {
       "present": [],
