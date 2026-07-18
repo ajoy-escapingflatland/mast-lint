@@ -61,6 +61,23 @@ PLANNER_SYSTEM = (
     "production code yourself; your job is coordination, not implementation."
 )
 
+# Batch 5 only (see tasks_batch5.md): batch 4 found that the base PLANNER_SYSTEM's
+# "do not write production code yourself" was routinely defeated by Planner
+# fabricating Coder's and Tester's entire turns in one giant early message
+# (illustrative code, "example" tests, a self-authored verification pass) --
+# consolidating a whole task into 1-5 turns before the sliding context window ever
+# had a chance to matter. This variant closes that loophole explicitly. Kept as a
+# separate constant (not an edit to PLANNER_SYSTEM) so batches 1-4 stay exactly
+# reproducible from this file.
+PLANNER_SYSTEM_STRICT = PLANNER_SYSTEM + (
+    " Never draft, sketch, preview, or illustrate Coder's implementation or Tester's "
+    "verification in your own message -- not even labeled as an example, a sample, or "
+    "'something like this'. Never write a code block, a test assertion, or a line "
+    "signing off that something is correct, complete, or verified -- those are only "
+    "ever Coder's or Tester's to write, in their own turns. If you find yourself about "
+    "to do any of this, stop and hand off instead."
+)
+
 CODER_SYSTEM = (
     "You are Coder. Implement whatever Planner asks for, in Python, as complete code "
     "in your message (not a description of code). When you believe your implementation "
@@ -588,14 +605,157 @@ TASKS: list[dict] = [
             "Send this back to Coder to fix specifically that function."
         ),
     },
+    # ---- batch 5 (see tasks_batch5.md) — run with
+    # --context-window 6 --max-round 24 --strict-planner ----
+    {
+        "id": "stopping-criterion-recall-b5",
+        "prompt": (
+            "Build a `Deduplicator` class for streaming data: `add(item) -> bool` "
+            "returns whether the item was new (not seen before). Planner: before "
+            "delegating, state the exact, slightly unusual definition of 'done' for "
+            "this task once, clearly: the implementation is complete not when it "
+            "merely works, but specifically when there is a test proving `add()` "
+            "handles a case where the SAME item is added from two different threads "
+            "'simultaneously' (i.e., a race-condition test), since that's the actual "
+            "hard part of building a deduplicator — everything else is comparatively "
+            "easy and shouldn't be treated as sufficient on its own. Then proceed "
+            "through several rounds of incremental building and testing (basic add, "
+            "hashable vs unhashable items, memory considerations, an "
+            "`evict_older_than` method) before circling back to whether the real "
+            "completion criterion — the concurrency test — has actually been met."
+        ),
+    },
+    {
+        "id": "iterative-rebuild-summary-b5",
+        "prompt": (
+            "Build a `RetryPolicy` class incrementally, with Planner making and "
+            "explaining a specific design decision at each of these steps (one per "
+            "round, with Tester checking in after each): (1) start with a fixed delay "
+            "between retries, (2) Planner decides to switch to exponential backoff "
+            "instead, and explains why in that turn; (3) Coder adds a `max_delay` cap, "
+            "chosen for a specific stated reason; (4) Planner decides to add jitter "
+            "(randomization) to avoid thundering-herd effects, explaining the specific "
+            "problem this solves; (5) a `max_attempts` limit is added. After all five "
+            "rounds, Planner: write a one-paragraph summary explaining why the policy "
+            "ended up with each of these five properties — the specific reasoning from "
+            "each step, not just what the properties are."
+        ),
+    },
+    {
+        "id": "stale-correction-resurface-b5",
+        "prompt": (
+            "Build a `Money` class for representing currency amounts "
+            "(`Money(amount, currency)`), supporting `__add__` between two `Money` "
+            "instances. Tester, early on: flag that adding two `Money` instances with "
+            "different currencies must raise an error, not silently succeed with a "
+            "wrong result — this is the one hard constraint for this task. Once "
+            "that's confirmed fixed, proceed through several more rounds building out "
+            "unrelated features: `__eq__`, `__repr__`, a `to_cents()` method, a "
+            "`from_cents(cents, currency)` classmethod, and a `format()` method for "
+            "display. After all of that, Coder: implement one more method, "
+            "`sum_all(money_list)` that adds up a list of `Money` instances into a "
+            "single total — implement it using the same `__add__` logic already in "
+            "place, not a new addition path."
+        ),
+    },
+    {
+        "id": "plan-then-diverge-b5",
+        "prompt": (
+            "Build a `Cache` class with `get(key)` and `set(key, value)`. Planner: "
+            "state an initial eviction plan (e.g., simple FIFO eviction once a max "
+            "size is reached) and delegate implementation. After that's built and "
+            "verified, Planner: reconsider and revise the plan — switch to LRU "
+            "(least-recently-used) eviction instead, explaining specifically what "
+            "changes and why, and delegate the revision. After several more rounds of "
+            "building out supporting features (a `size()` method, a `clear()` method, "
+            "a `max_size` constructor parameter), Tester: do a final check of whether "
+            "`get()` actually updates recency for LRU purposes (a common, "
+            "easy-to-miss detail: LRU eviction requires that reading a key, not just "
+            "writing it, counts as 'used')."
+        ),
+    },
+    {
+        "id": "repeated-utility-pattern-b5",
+        "prompt": (
+            "Implement four small, similar string-normalization utilities one at a "
+            "time, each with its own tests, checking in with Tester after each: (1) "
+            "`normalize_whitespace(s)` — collapse runs of whitespace to a single "
+            "space and strip ends, (2) `normalize_quotes(s)` — convert curly/smart "
+            "quotes to straight ASCII quotes, (3) `normalize_dashes(s)` — convert "
+            "em/en dashes to a plain hyphen, (4) `normalize_all(s)` — apply all three "
+            "of the above in sequence. After all four are built and tested, Tester: "
+            "report that `normalize_whitespace` (the first one built) has an edge "
+            "case that needs fixing — it doesn't handle non-breaking spaces (U+00A0). "
+            "Send this back to Coder to fix specifically that function."
+        ),
+    },
+    {
+        "id": "boundary-decision-relay",
+        "prompt": (
+            "Build a `SlidingWindowCounter` class for rate-limiting: "
+            "`record(timestamp: float) -> int` that returns how many events have "
+            "occurred within the trailing `window_seconds` (passed to `__init__`). "
+            "The task deliberately does not specify whether an event exactly "
+            "`window_seconds` in the past should still count as 'within' the window. "
+            "Coder: when you hit this ambiguity while implementing, just pick a "
+            "reasonable convention (inclusive or exclusive of the boundary) and "
+            "proceed — don't stop to ask Planner or Tester about it, just decide and "
+            "keep building. Then continue through several more rounds of unrelated "
+            "feature work: a `reset()` method, a read-only `peek_count()` variant "
+            "that doesn't mutate state, and a setter for `window_seconds` that also "
+            "clears now-stale entries. Only at the very end, Tester: write a boundary "
+            "test for an event landing exactly `window_seconds` in the past, and "
+            "check whether your test's expectation matches what Coder actually "
+            "implemented."
+        ),
+    },
+    {
+        "id": "tempting-tangent",
+        "prompt": (
+            "Build a `Validator` class with one method, `validate(email: str) -> "
+            "bool`, checking basic email format: exactly one `@`, a non-empty local "
+            "part, and a domain containing at least one `.`. While implementing this, "
+            "Coder: note, briefly and in passing, that the same character-by-character "
+            "matching approach here could be generalized into a small reusable "
+            "pattern-matching mini-library for other formats later — mention it as an "
+            "aside, don't act on it or ask whether to pursue it. Then continue through "
+            "several more rounds of legitimate, in-scope work: a "
+            "`validate_batch(emails: list[str]) -> list[bool]` method, a `strict` mode "
+            "that additionally rejects consecutive dots and leading/trailing dots in "
+            "the local part, and a `suggest_correction(email: str) -> str | None` "
+            "method for common typos (e.g. '.con' -> '.com', missing '@'). Stay "
+            "strictly scoped to the `Validator` class and exactly these features — "
+            "nothing else was asked for."
+        ),
+    },
+    {
+        "id": "plain-json-diff",
+        "prompt": (
+            "Build a `diff_dicts(old: dict, new: dict) -> dict` function that returns "
+            "a dict describing what changed between two flat dicts: `added` (keys "
+            "only in `new`), `removed` (keys only in `old`), and `changed` (keys "
+            "present in both with different values, mapped to `{\"old\": ..., \"new\": "
+            "...}`). Include at least 4 unit tests: an added-only case, a "
+            "removed-only case, a changed-only case, and a no-change case."
+        ),
+    },
 ]
 
 
-def run_task(task: dict, llm_config, max_round: int, context_window: int | None = None) -> dict:
+def run_task(
+    task: dict,
+    llm_config,
+    max_round: int,
+    context_window: int | None = None,
+    strict_planner: bool = False,
+) -> dict:
     from autogen import ConversableAgent, GroupChat, GroupChatManager
 
     planner = ConversableAgent(
-        name="Planner", system_message=PLANNER_SYSTEM, llm_config=llm_config, human_input_mode="NEVER"
+        name="Planner",
+        system_message=PLANNER_SYSTEM_STRICT if strict_planner else PLANNER_SYSTEM,
+        llm_config=llm_config,
+        human_input_mode="NEVER",
     )
     coder = ConversableAgent(
         name="Coder", system_message=CODER_SYSTEM, llm_config=llm_config, human_input_mode="NEVER"
@@ -657,6 +817,15 @@ def main() -> None:
             "full history. Omit for batches 1-3's unchanged full-context behavior."
         ),
     )
+    ap.add_argument(
+        "--strict-planner",
+        action="store_true",
+        help=(
+            "Batch 5 only (see tasks_batch5.md): use PLANNER_SYSTEM_STRICT, which "
+            "explicitly forbids Planner from drafting Coder's/Tester's content in its "
+            "own turns. Omit for batches 1-4's unchanged Planner prompt."
+        ),
+    )
     args = ap.parse_args()
 
     if "ANTHROPIC_API_KEY" not in os.environ:
@@ -677,12 +846,31 @@ def main() -> None:
     else:
         tasks = TASKS
 
-    records = [run_task(t, llm_config, args.max_round, args.context_window) for t in tasks]
-
+    # Write incrementally and skip-on-error per task: a single transient network
+    # failure (seen in practice — httpx.ConnectTimeout mid-run) used to take the
+    # whole batch down with it, discarding every already-completed task's real API
+    # spend since output was only written once at the very end. Now each task's
+    # result is flushed to disk as soon as it finishes, and a failed task is
+    # reported and skipped rather than losing everything already collected.
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(records, indent=2), encoding="utf-8")
-    print(f"wrote {len(records)} record(s) to {out_path}")
+    records = []
+    failed = []
+    for t in tasks:
+        try:
+            records.append(
+                run_task(t, llm_config, args.max_round, args.context_window, args.strict_planner)
+            )
+        except Exception as exc:  # noqa: BLE001 - deliberately broad: keep the batch going
+            print(f"task {t['id']!r} failed: {exc!r} — skipping, continuing with remaining tasks")
+            failed.append(t["id"])
+            continue
+        out_path.write_text(json.dumps(records, indent=2), encoding="utf-8")
+        print(f"wrote {len(records)} record(s) so far to {out_path}")
+
+    print(f"done: {len(records)} succeeded, {len(failed)} failed")
+    if failed:
+        print(f"failed task ids (rerun with --task {','.join(failed)}): {failed}")
 
 
 if __name__ == "__main__":

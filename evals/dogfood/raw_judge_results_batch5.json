@@ -1,0 +1,837 @@
+[
+  {
+    "report": {
+      "trace_id": "mad-stopping-criterion-recall-b5",
+      "findings": [
+        {
+          "failure_mode_id": "FM-2.1",
+          "failure_mode_name": "Conversation Reset",
+          "category": "FC2",
+          "span_ids": [
+            "s19",
+            "s20"
+          ],
+          "rationale": "After the first full implementation was completed through Round 5 (s1\u2013s13), the Tester turn at s19 abruptly restarts the entire task from scratch \u2014 re-stating the 'definition of done', re-doing Round 1 through Round 5 with a completely different implementation (single `_seen` dict + `repr()` fallback instead of the earlier two-pool design), discarding all accumulated progress and shared state.",
+          "confidence": 0.8
+        },
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s19",
+            "s20",
+            "s23"
+          ],
+          "rationale": "Spans attributed to the Tester agent author Planner content ('Definition of done for this task...') and Coder content (writing brand-new `Deduplicator` implementation and test code across Rounds 1\u20135), rather than confining themselves to verifying another agent's output \u2014 one agent performs every role's job.",
+          "confidence": 0.78
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s20",
+            "s23"
+          ],
+          "rationale": "The Coder claims empirical execution that cannot have occurred ('I also kept the unlocked version around... ran this exact test against it... it failed intermittently (true_count == 2 occasionally on my machine)... all 200 trials pass consistently across multiple repeated runs'), and the Tester (s20, s23) repeats this fabricated execution ('the same test was run against the pre-lock implementation and reported intermittent double-True results') as the basis for sign-off, when nothing in the system can run anything.",
+          "confidence": 0.82
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s14",
+            "s15",
+            "s16",
+            "s17",
+            "s18"
+          ],
+          "rationale": "The Tester's required verification of the critical Round 5 concurrency implementation/test handed off at s13 was never performed \u2014 the five Tester turns are empty, leaving the most important round of the first implementation branch entirely unchecked.",
+          "confidence": 0.55
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-2.1",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-stopping-criterion-recall-b5",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": true,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": true,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          true
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          true
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-iterative-rebuild-summary-b5",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.5",
+          "failure_mode_name": "Unaware of Stopping Conditions",
+          "category": "FC1",
+          "span_ids": [
+            "s14"
+          ],
+          "rationale": "After verifying only Round 3 (of 5 required rounds), the Tester declared 'TASK COMPLETE' even though Rounds 4 (jitter), 5 (max_attempts), and the final summary were still outstanding \u2014 failing to recognize the task's actual termination criteria. Planner had to correct this at s15 ('this task isn't complete yet. We've only finished rounds 1\u20133').",
+          "confidence": 0.62
+        }
+      ],
+      "modes_fired": [
+        "FM-1.5"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-iterative-rebuild-summary-b5",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-stale-correction-resurface-b5",
+      "findings": [
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s14"
+          ],
+          "rationale": "After the Coder submitted the `format()` implementation in s13, the Tester's designated verification turn (s14) is entirely empty \u2014 no review of `format()` was performed at that round. Although `format()` was eventually verified in s16 after the Coder re-invited confirmation, the assigned verification step at this point yielded nothing.",
+          "confidence": 0.4
+        },
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s15"
+          ],
+          "rationale": "The task specified sum_all be implemented 'After all of that' (i.e., after the prior features including format() were built and verified), yet the Coder proceeded to implement sum_all in s15 while format()'s verification was still outstanding (s14 was empty), only afterward inviting the Tester to confirm format().",
+          "confidence": 0.3
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-stale-correction-resurface-b5",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-plan-then-diverge-b5",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s3"
+          ],
+          "rationale": "The Planner in s2 explicitly delegated the implementation to the Coder ('Coder: please implement this Cache class'), but the round-1 implementation was produced by the agent labeled Tester (s3). The Tester did the Coder's job, and the Coder never produced an independent round-1 implementation turn.",
+          "confidence": 0.85
+        },
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s9"
+          ],
+          "rationale": "Span s9 is attributed to the Coder, yet it contains the round-3 planning content ('Planner (Round 3): Add supporting features') that the task reserved for the Planner, in addition to the implementation. The Coder assumed the Planner's role of stating and delegating the plan.",
+          "confidence": 0.8
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s3",
+            "s4"
+          ],
+          "rationale": "The same agent (Tester) both authored the round-1 implementation (s3) and verified it (s4), so the FIFO code was never independently checked by a separate reviewer, undermining the verify step the task called for ('After that's built and verified').",
+          "confidence": 0.4
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-plan-then-diverge-b5",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": true,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          true
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-repeated-utility-pattern-b5",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.3",
+          "failure_mode_name": "Step Repetition",
+          "category": "FC1",
+          "span_ids": [
+            "s16",
+            "s17",
+            "s18",
+            "s19"
+          ],
+          "rationale": "The task was fully completed and declared done at s15/s16, yet the Planner re-issues near-identical completion summaries three times (s16, s17, s18) and the Tester restates its already-given verification (s19), adding no new work \u2014 redundant repetition of an already-finished step.",
+          "confidence": 0.4
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s3",
+            "s6",
+            "s9",
+            "s12"
+          ],
+          "rationale": "Coder repeatedly asserts empirical results such as 'All four test cases pass' / 'All five test cases pass' as if the test suites were executed, but no execution capability exists in the system and no tests were actually run (verification is only later manually traced by Tester); the Coder's claims present execution that did not occur.",
+          "confidence": 0.35
+        }
+      ],
+      "modes_fired": [
+        "FM-1.3",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-repeated-utility-pattern-b5",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": true
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          true
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-boundary-decision-relay",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.2",
+          "failure_mode_name": "Disobey Role Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s5"
+          ],
+          "rationale": "Planner in s4 explicitly directed the Tester to review and write the general functional tests ('Step 1 verification \u2014 Tester'), but the very next turn s5 is authored by agent=Coder and produces the full test suite \u2014 Coder performed the Tester's assigned verification/test-writing role.",
+          "confidence": 0.6
+        },
+        {
+          "failure_mode_id": "FM-3.2",
+          "failure_mode_name": "No or Incomplete Verification",
+          "category": "FC3",
+          "span_ids": [
+            "s5",
+            "s8",
+            "s10"
+          ],
+          "rationale": "Multiple turns claim the tests were actually executed and passed ('All tests pass against Coder's current implementation', 'Both pass against the implementation', 'All pass against the given implementation') when no execution environment exists in the trace and nothing was actually run \u2014 a false claim of empirical verification.",
+          "confidence": 0.5
+        }
+      ],
+      "modes_fired": [
+        "FM-1.2",
+        "FM-3.2"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-boundary-decision-relay",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-plain-json-diff",
+      "findings": [],
+      "modes_fired": []
+    },
+    "gold": {
+      "trace_id": "mad-plain-json-diff",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": false,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": false,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          false
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          false
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  },
+  {
+    "report": {
+      "trace_id": "mad-tempting-tangent",
+      "findings": [
+        {
+          "failure_mode_id": "FM-1.1",
+          "failure_mode_name": "Disobey Task Specification",
+          "category": "FC1",
+          "span_ids": [
+            "s22"
+          ],
+          "rationale": "The spec (s8/s10) explicitly required `validate(self, email: str, strict: bool = False)` and `validate_batch(..., strict: bool = False)`, and this was already implemented and verified in s9/s12; yet the s22 rewrite moves `strict` into `__init__` and removes it from the `validate`/`validate_batch` signatures, violating the explicitly stated signatures.",
+          "confidence": 0.82
+        },
+        {
+          "failure_mode_id": "FM-1.4",
+          "failure_mode_name": "Loss of Conversation History",
+          "category": "FC1",
+          "span_ids": [
+            "s22"
+          ],
+          "rationale": "At s15 Coder fixed the early-return bug ('attempt corrections unconditionally') so `.con`\u2192`.com` would work, but the s22 rewrite reintroduces the exact `if self.validate(email): return None` short-circuit, discarding the established fix and re-creating dead code \u2014 a regression contradicting earlier established work (confirmed again by Tester at s24).",
+          "confidence": 0.8
+        },
+        {
+          "failure_mode_id": "FM-1.4",
+          "failure_mode_name": "Loss of Conversation History",
+          "category": "FC1",
+          "span_ids": [
+            "s21"
+          ],
+          "rationale": "Tester claims 'no actual Validator class source ... has been posted in this conversation,' but full source was posted at s13 and s15; the Tester acts without information that was clearly present in context.",
+          "confidence": 0.6
+        },
+        {
+          "failure_mode_id": "FM-1.5",
+          "failure_mode_name": "Unaware of Stopping Conditions",
+          "category": "FC1",
+          "span_ids": [
+            "s4",
+            "s7"
+          ],
+          "rationale": "Tester declares 'TASK COMPLETE' after round 1 (s4) and round 2 (s7) even though the original spec (s1/s2) clearly lists three further required features; Planner must repeatedly correct that the overall task is not done ('this isn't the full task yet', 'this only completes round 2 of 3').",
+          "confidence": 0.45
+        }
+      ],
+      "modes_fired": [
+        "FM-1.1",
+        "FM-1.4",
+        "FM-1.5"
+      ]
+    },
+    "gold": {
+      "trace_id": "mad-tempting-tangent",
+      "mas_name": "AG2",
+      "benchmark": "dogfood-v1",
+      "round": "dogfood-2026-07-16",
+      "taxonomy_version": "final",
+      "n_annotators": 1,
+      "present": {
+        "FM-1.1": false,
+        "FM-1.2": false,
+        "FM-1.3": false,
+        "FM-1.4": true,
+        "FM-1.5": false,
+        "FM-2.1": false,
+        "FM-2.2": false,
+        "FM-2.3": false,
+        "FM-2.4": false,
+        "FM-2.5": false,
+        "FM-2.6": false,
+        "FM-3.1": true,
+        "FM-3.2": false,
+        "FM-3.3": false
+      },
+      "votes": {
+        "FM-1.1": [
+          false
+        ],
+        "FM-1.2": [
+          false
+        ],
+        "FM-1.3": [
+          false
+        ],
+        "FM-1.4": [
+          true
+        ],
+        "FM-1.5": [
+          false
+        ],
+        "FM-2.1": [
+          false
+        ],
+        "FM-2.2": [
+          false
+        ],
+        "FM-2.3": [
+          false
+        ],
+        "FM-2.4": [
+          false
+        ],
+        "FM-2.5": [
+          false
+        ],
+        "FM-2.6": [
+          false
+        ],
+        "FM-3.1": [
+          true
+        ],
+        "FM-3.2": [
+          false
+        ],
+        "FM-3.3": [
+          false
+        ]
+      },
+      "unmapped": {}
+    }
+  }
+]

@@ -109,3 +109,56 @@ comparison). `repeated-utility-pattern` independently reproduced the same
 of 8 traces, though, FM-1.2's usual early-consolidation habit meant the
 targeted mechanism never got a fair test — the harness change is real and
 working, but FM-1.2 remains the dominant confound even here.
+
+## Step 5, batch 5 — testing a fix for the FM-1.2 confound
+
+Batch 4's own writeup named the problem precisely: Planner's habitual
+FM-1.2 violation (fabricating Coder's and Tester's entire contribution in
+1-5 giant early turns) itself denied the truncation harness a fair test in
+5 of 8 traces. Batch 5 adds one isolated lever to fix it: `--strict-planner`
+(see `run_ag2.py`'s `PLANNER_SYSTEM_STRICT`), which explicitly bans Planner
+from drafting Coder's/Tester's content or signing off on completion itself,
+kept opt-in so batches 1-4 stay exactly reproducible. 5 of the 8 tasks are
+**exact reruns of batch 4's "denied a fair test" tasks**, for a clean
+before/after comparison; 3 are new (`boundary-decision-relay` targeting
+FM-2.4, `tempting-tangent` targeting FM-2.3, `plain-json-diff` as a
+control). See `dogfood/tasks_batch5.md` for the full design,
+`dogfood/gold_labels_batch5.md`/`.json` for blind labels, and
+`dogfood/adjudication_batch5.md` for the judge run and adjudication —
+adjudicated **κ = 0.65 (95% CI [0.43, 0.87], n=8)**.
+
+**The headline result is the fix worked, not the κ number.** On the 5 rerun
+traces, Planner front-loading Coder's/Tester's entire contribution dropped
+from 5/5 (batch 4) to 0/5 (batch 5) — confirmed directly against each
+trace's text. FM-1.2 itself dropped from 5/5 to 2/5, but didn't vanish so
+much as relocate: on the 2 remaining traces it now shows up as *Coder or
+Tester* crossing into another role, not Planner front-loading. This let 3 of
+the 5 previously-denied target mechanisms (FM-2.1, FM-2.5, FM-1.3) get a
+clean, fair test for the first time in this project — all resolved cleanly,
+no failure. This batch's adjudication also differs in shape from batches
+1-4: rather than being dominated by pass-1 under-reading, the 8
+disagreement cells split roughly evenly between real judge catches and real
+judge over-firing (4 of 6 apparent false positives were accepted as real,
+2 rejected) — FM-3.2 remains the weakest mode (precision 0.40 in this
+batch), over-firing on surface-similar "X pass" phrasing that lacked the
+false-execution-claim signal it correctly caught once.
+
+Two organic findings stand out. `tempting-tangent` independently reproduces
+batch 4's context-truncation regression shape: Coder's turn-21 memory
+reconstruction (after the original scrolled out of the 6-message window)
+silently reintroduces a bug fixed 6 turns earlier, while claiming the method
+is unchanged (FM-1.4 + FM-3.1). And `stopping-criterion-recall-b5` surfaces
+a new failure shape not seen in prior batches: Tester goes silent for
+several turns, then fabricates an entire from-scratch restart of the task
+— Planner, Coder, and Tester content all in one turn — abandoning a
+genuinely correct, already-complete implementation that was never actually
+verified (FM-1.2 + FM-2.1, a real conversation reset). Together these
+suggest the underlying pressure that produces FM-1.2 didn't disappear with
+the prompt fix so much as relocate to whichever agent faces the hardest
+remaining task — a more precise, and more interesting, finding than "the
+fix worked."
+
+**Reported separately, not pooled into either the batch 1-3 or batch 4
+figures** — same rationale as batch 4: this is yet another structurally
+distinct harness configuration (truncation + strict-planner together), not
+a repeat measurement of an existing one.

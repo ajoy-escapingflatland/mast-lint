@@ -37,7 +37,7 @@ The flow is deliberately small:
   to where in the trace it happened. A judge that "feels" a failure but can't point
   to spans is a bug, not a finding.
 
-## Current state (Step 5 in progress — dogfood batch 4 done, harness-change lever opened)
+## Current state (Step 5 in progress — dogfood batch 5 done, FM-1.2 confound fix validated)
 Scaffold, taxonomy, schema, judge, segmenter (v0: whole-trace-as-one-window, see
 `segment.py`), report renderer, and the MAST/MAD dataset adapter (`adapters/mast.py`
 — NOT LangGraph; that framework was never built) all exist and work. `mast-lint
@@ -131,6 +131,34 @@ though, FM-1.2's usual early-consolidation habit denied the harness change a
 fair test — real signal, but FM-1.2 remains the dominant confound even on a
 different harness.
 
+**Batch 5 tested a direct fix for that confound: `--strict-planner`**
+(`run_ag2.py`'s `PLANNER_SYSTEM_STRICT`), an opt-in system-prompt change
+banning Planner from drafting Coder's/Tester's content or signing off on
+completion itself. 5 of 8 tasks were exact reruns of batch 4's
+"denied a fair test" tasks for a clean before/after comparison; 3 were new
+(`evals/dogfood/tasks_batch5.md`). Adjudicated κ = 0.65 (95% CI [0.43,
+0.87], n=8) — see `evals/dogfood/adjudication_batch5.md`. **Reported
+separately, not pooled into any prior figure** (yet another structurally
+distinct harness). The headline result is the fix itself, not the κ number:
+Planner front-loading dropped from 5/5 (batch 4) to 0/5 (batch 5) on the
+exact same 5 tasks, confirmed directly against trace text. FM-1.2 dropped
+from 5/5 to 2/5 but relocated rather than disappeared — on the 2 remaining
+traces it now shows up as Coder or Tester crossing into another role
+instead of Planner front-loading everything. This let 3 of the 5
+previously-denied mechanisms (FM-2.1, FM-2.5, FM-1.3) get a clean, fair
+test for the first time in this project — all resolved cleanly, no
+violation. Two organic findings stand out: `tempting-tangent` independently
+reproduces batch 4's context-truncation regression shape (a memory-
+reconstruction turn silently reintroduces a bug fixed 6 turns earlier,
+falsely claimed unchanged), and `stopping-criterion-recall-b5` surfaces a
+new failure shape — Tester goes silent, then fabricates an entire
+from-scratch restart of the task, abandoning a genuinely correct,
+never-verified implementation (a real conversation reset). This batch's
+adjudication also broke from the pattern of batches 1-4: rather than being
+dominated by pass-1 under-reading, its 8 disagreement cells split roughly
+evenly between real judge catches and real judge over-firing — a genuinely
+different failure shape, not just a lower number.
+
 ## Roadmap (build in this order)
 1. **[done] Step 1** — taxonomy.yaml, schema, scaffold, example trace.
 2. **[done] Step 2** — adapter into `Trace` for the MAST/MAD dataset, covering
@@ -147,23 +175,29 @@ different harness.
    dataset, which is why Step 5 (fresh, unpublished traces) is the only way to
    get a contamination-clean number.
 5. **Step 5, in progress** — dogfood on real agent-loop runs; the results
-   become the launch essay. Four batches done. Batches 1-3 (same harness,
+   become the launch essay. Five batches done. Batches 1-3 (same harness,
    varied task content) combine to κ = 0.76 (95% CI [0.61, 0.88], n=24 —
    see "Current state"), CI tight enough to anchor a headline number. Batch 4
    (new harness — real context truncation) reports separately at κ = 0.76
    (95% CI [0.50, 0.87], n=8) and produced this project's most convincing
    organic finding yet: a real regression caused by genuine context loss,
-   missed by verification that falsely claimed nothing had changed. Two
-   things remain before any of this is genuinely done: (a) single-annotator
-   ground truth — a second qualified annotator, or at minimum a stricter
-   self-consistency re-check of batch 1, since batches 2, 3, *and 4* have all
-   now caught the pass-1 annotator missing real findings on first read
-   (batch 4 worst of all: naive κ was 0.40 before adjudication); (b) coverage
-   — most of batch 4's traces still had FM-1.2's early-consolidation habit
-   deny the new harness a fair test, so a fifth batch combining the working
-   truncation harness with a stronger nudge against upfront fabrication (or
-   just more traces to get past FM-1.2's variance) is the natural next step,
-   not yet another structural pivot.
+   missed by verification that falsely claimed nothing had changed. Batch 5
+   (truncation harness + `--strict-planner`) reports separately at κ = 0.65
+   (95% CI [0.43, 0.87], n=8) and validated the fix for batch 4's coverage
+   problem — FM-1.2's dominant Planner-front-loading pattern dropped 5/5 →
+   0/5 on 5 exact reruns, letting 3 previously-denied mechanisms get a fair
+   test for the first time. One thing remains before any of this is
+   genuinely done: **single-annotator ground truth** — a second qualified
+   annotator, or at minimum a stricter self-consistency re-check of batch 1,
+   since batches 2 through 5 have all now caught the pass-1 annotator
+   missing (or, in batch 5's case, wrongly asserting) real findings on first
+   read. Coverage is no longer the open item it was — batch 5 closed the
+   fair-test gap batch 4 left open, and the residual FM-1.2 recurrence
+   (now via Coder/Tester role-crossing rather than Planner front-loading)
+   reads as a genuine, informative finding rather than a harness defect to
+   chase further. Further dogfood batches chasing marginal κ gains are
+   lower priority than getting one real independent annotator on a
+   stratified sample of existing traces.
 
 ## Conventions
 - Python ≥3.10, Pydantic v2, Typer CLI, `ruff` + `pytest`. Keep deps minimal.
