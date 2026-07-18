@@ -61,6 +61,13 @@ def test_serialize_spans_truncates_huge_span():
     assert len(text) < J.MAX_CHARS_PER_SPAN + 500
 
 
+def test_serialize_spans_includes_tool_name_for_tool_calls():
+    span = Span(span_id="s1", agent="a", kind="tool_call", tool_name="web_search",
+                content="query: foo")
+    text = J.serialize_spans([span])
+    assert "tool=web_search" in text
+
+
 def test_findings_schema_enum_matches_taxonomy():
     schema = J.findings_schema()
     enum = schema["properties"]["findings"]["items"]["properties"]["failure_mode_id"]["enum"]
@@ -134,6 +141,30 @@ def test_parse_handles_code_fence_and_bare_list():
 def test_parse_empty_and_garbage():
     assert J.parse_findings('{"findings": []}', {"s1"}) == []
     assert J.parse_findings("not json at all", {"s1"}) == []
+
+
+def test_parse_findings_value_that_is_not_a_list_returns_empty():
+    raw = json.dumps({"findings": "oops, not a list"})
+    assert J.parse_findings(raw, {"s1"}) == []
+
+
+def test_parse_skips_non_dict_items_but_keeps_valid_ones():
+    raw = json.dumps({"findings": [
+        "garbage-string-item",
+        {"failure_mode_id": "FM-3.1", "failure_mode_name": "x", "category": "FC3",
+         "span_ids": ["s1"], "rationale": "r", "confidence": 0.8},
+    ]})
+    findings = J.parse_findings(raw, {"s1"})
+    assert len(findings) == 1, "a malformed item must be skipped, not crash the whole batch"
+    assert findings[0].failure_mode_id == "FM-3.1"
+
+
+def test_parse_non_numeric_confidence_defaults_to_half():
+    raw = json.dumps({"findings": [{
+        "failure_mode_id": "FM-3.1", "failure_mode_name": "x", "category": "FC3",
+        "span_ids": ["s1"], "rationale": "r", "confidence": "very confident",
+    }]})
+    assert J.parse_findings(raw, {"s1"})[0].confidence == 0.5
 
 
 # --------------------------------------------------------------------------- #
@@ -223,6 +254,24 @@ def test_anthropic_judge_refusal_returns_empty_findings():
     resp = _MockResp([], stop_reason="refusal")
     judge = J.AnthropicJudge(client=_MockClient(resp=resp))
     assert J.parse_findings(judge.complete("s", "u"), set()) == []
+
+
+def test_anthropic_judge_no_text_block_falls_back_to_empty_findings():
+    # Not a refusal, but the response has no text-type content block at all
+    # (e.g. only a tool_use block) — must not raise or return garbage.
+    resp = _MockResp([_MockBlock("thinking", ""), _MockBlock("tool_use", "")],
+                      stop_reason="end_turn")
+    judge = J.AnthropicJudge(client=_MockClient(resp=resp))
+    assert judge.complete("s", "u") == '{"findings": []}'
+
+
+def test_anthropic_judge_default_client_reads_env_api_key(monkeypatch):
+    # No client= override: exercises the lazy `import anthropic; anthropic.Anthropic()`
+    # path. Constructing the SDK client validates key *shape*, not the network, so this
+    # is free and offline.
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-not-a-real-key")
+    judge = J.AnthropicJudge()
+    assert judge.client is not None
 
 
 def test_anthropic_judge_wraps_api_errors_in_judgeerror():
