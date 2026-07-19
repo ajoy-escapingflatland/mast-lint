@@ -1,4 +1,5 @@
 """Tests for the Step-4 κ eval harness (offline — fake judge, no API)."""
+import sys
 from pathlib import Path
 
 from mastlint import evals
@@ -354,3 +355,85 @@ def test_diff_runs_skips_traces_absent_from_baseline():
     changes = evals.diff_runs(baseline, new)
     # t2 has no baseline to diff against -> only t1's flip is reported.
     assert [c.trace_id for c in changes] == ["t1"]
+
+
+# --------------------------------------------------------------------------- #
+# _std — the len<2 shortcut branch (empty vs. exactly-one, distinct from the
+# real variance formula used for 2+ values)
+# --------------------------------------------------------------------------- #
+def test_aggregate_runs_single_run_has_zero_spread_not_none():
+    gold = _gold("t1", {"FM-1.5": True})
+    single_run = [(_report("t1", ["FM-1.5"]), gold)]
+    agg = evals.aggregate_runs([single_run])
+    assert agg.n_runs == 1
+    assert agg.std_kappa == 0.0, "one data point has zero spread, not undefined spread"
+    assert agg.mean_kappa == agg.per_run_kappa[0]
+
+
+# --------------------------------------------------------------------------- #
+# Terminal rendering — rich-available path, the unscored_findings warning, and
+# the rich-missing plain-text fallback each print_* function carries independently
+# --------------------------------------------------------------------------- #
+def test_print_eval_flags_unscored_findings(capsys):
+    # FM-1.4 is fired but not in this v1 trace's labelable universe -> unscored.
+    gold = _gold("t1", {"FM-1.5": True})
+    ev = evals.score([(_report("t1", ["FM-1.5", "FM-1.4"]), gold)])
+    assert ev.unscored_findings == 1
+
+    evals.print_eval(ev)
+    out = capsys.readouterr().out
+    assert "excluded from scoring" in out
+
+
+def test_print_eval_falls_back_to_plain_when_rich_missing(capsys, monkeypatch):
+    monkeypatch.setitem(sys.modules, "rich.console", None)
+    monkeypatch.setitem(sys.modules, "rich.table", None)
+    gold = _gold("t1", {"FM-1.5": True})
+    ev = evals.score([(_report("t1", ["FM-1.5"]), gold)])
+
+    evals.print_eval(ev)
+    out = capsys.readouterr().out
+    assert "Judge vs. human κ =" in out
+    assert "FM-1.5" in out
+    assert "┃" not in out and "─" not in out
+
+
+def test_print_sweep_falls_back_to_plain_when_rich_missing(capsys, monkeypatch):
+    monkeypatch.setitem(sys.modules, "rich.console", None)
+    monkeypatch.setitem(sys.modules, "rich.table", None)
+    gold = _gold("t1", {"FM-1.5": True})
+    pairs = [(_report_conf("t1", {"FM-1.5": 0.6}), gold)]
+    reports = evals.sweep_thresholds(pairs, [0.0, 1.0])
+
+    evals.print_sweep(reports)
+    out = capsys.readouterr().out
+    assert "τ=0.00" in out and "τ=1.00" in out
+    assert "┃" not in out and "─" not in out
+
+
+def test_print_bootstrap_falls_back_to_plain_when_rich_missing(capsys, monkeypatch):
+    monkeypatch.setitem(sys.modules, "rich.console", None)
+    monkeypatch.setitem(sys.modules, "rich.table", None)
+    gold = _gold("t1", {"FM-1.5": True})
+    pairs = [(_report("t1", ["FM-1.5"]), gold)]
+    report = evals.bootstrap_scores(pairs, n_resamples=20, seed=0)
+
+    evals.print_bootstrap(report)
+    out = capsys.readouterr().out
+    assert "Bootstrap" in out and "overall:" in out
+    assert "┃" not in out and "─" not in out
+
+
+def test_print_bootstrap_formats_a_ci_with_no_bounds_as_a_bare_point(capsys):
+    # A mode that never appeared in any bootstrap resample has no lo/hi bounds at
+    # all -- _fmt_ci must fall back to the point estimate alone, not crash on None.
+    no_bounds = evals.CI(point=0.5, lo=None, hi=None)
+    score_ci = evals.ScoreCI(label="FM-9.9", n=0, precision=no_bounds, recall=no_bounds,
+                              f1=no_bounds, kappa=no_bounds)
+    report = evals.BootstrapReport(n_traces=1, n_resamples=20, ci_level=0.95, seed=0,
+                                    overall=score_ci, per_mode=[score_ci])
+
+    evals.print_bootstrap(report)
+    out = capsys.readouterr().out
+    assert "0.50" in out
+    assert "[0.50," not in out, "a None-bounded CI must render as a bare point, no brackets"
