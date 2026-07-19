@@ -104,7 +104,10 @@ def test_lint_missing_anthropic_package_suggests_the_extra(monkeypatch):
     monkeypatch.setitem(sys.modules, "anthropic", None)
     result = runner.invoke(app, ["lint", str(EXAMPLE)])
     assert result.exit_code != 0
-    assert "pip install 'mastlint[llm]'" in result.output
+    # rich's error box can wrap the message across lines, so check the pieces
+    # separately rather than one contiguous substring.
+    assert "pip install" in result.output
+    assert "mastlint[llm]" in result.output
 
 
 def test_lint_judge_error_during_judging_exits_nonzero(monkeypatch):
@@ -142,6 +145,14 @@ def test_eval_json_flag_emits_a_valid_eval_report(monkeypatch):
     payload = json.loads(result.stdout)
     assert "overall" in payload
     assert "n_traces" in payload
+
+
+def test_eval_limit_scores_only_the_first_n_traces(monkeypatch):
+    monkeypatch.setattr(J, "AnthropicJudge", lambda model: FakeJudgeClient())
+    result = runner.invoke(app, ["eval", str(DATASET_FIXTURE), "--limit", "1", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["n_traces"] == 1
 
 
 def test_eval_multi_run_writes_suffixed_raw_files(tmp_path, monkeypatch):
@@ -210,3 +221,87 @@ def test_eval_diff_no_changes_says_so(tmp_path):
     result = runner.invoke(app, ["eval-diff", str(baseline), str(new)])
     assert result.exit_code == 0
     assert "No cells changed" in result.output
+
+
+def test_eval_ci_json_flag_emits_a_valid_bootstrap_report(tmp_path):
+    gold = _gold("t1", {"FM-1.5": True})
+    raw = tmp_path / "raw.json"
+    save_raw_results([(_report("t1", ["FM-1.5"]), gold)], raw)
+
+    result = runner.invoke(app, ["eval-ci", str(raw), "--resamples", "100", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert "overall" in payload
+    assert "ci_level" in payload
+
+
+# --------------------------------------------------------------------------- #
+# eval — --segmented-only skip message, and eval's own judge-init/JudgeError
+# error paths (same shape as lint's, exercised separately since it's distinct code)
+# --------------------------------------------------------------------------- #
+def _dataset_with_one_blob_trace(tmp_path) -> Path:
+    """A 2-record dataset: one real AG2 record (segmented) copied from the shared
+    fixture, plus one synthetic record whose framework has no parser at all, so it
+    falls back to a single raw blob span -- exactly what --segmented-only should skip."""
+    records = json.loads(DATASET_FIXTURE.read_text(encoding="utf-8"))
+    blob_record = {
+        "round": "Round 1",
+        "mas_name": "TotallyUnknownFramework",
+        "benchmark_name": "X",
+        "trace_id": 999,
+        "trace": "some unparsed raw transcript text",
+        "annotations": [],
+    }
+    path = tmp_path / "mixed.json"
+    path.write_text(json.dumps([records[0], blob_record]), encoding="utf-8")
+    return path
+
+
+def test_eval_segmented_only_skips_blob_traces_and_says_so(tmp_path, monkeypatch):
+    monkeypatch.setattr(J, "AnthropicJudge", lambda model: FakeJudgeClient())
+    dataset = _dataset_with_one_blob_trace(tmp_path)
+
+    result = runner.invoke(app, ["eval", str(dataset), "--segmented-only"])
+    assert result.exit_code == 0
+    assert "Scoring 1 segmented trace(s); skipping 1 blob-only trace(s)" in result.output
+
+
+def test_eval_without_segmented_only_scores_the_blob_trace_too(tmp_path, monkeypatch):
+    monkeypatch.setattr(J, "AnthropicJudge", lambda model: FakeJudgeClient())
+    dataset = _dataset_with_one_blob_trace(tmp_path)
+
+    result = runner.invoke(app, ["eval", str(dataset)])
+    assert result.exit_code == 0
+    assert "skipping" not in result.output
+
+
+def test_eval_judge_init_failure_is_a_clean_error(monkeypatch):
+    class BrokenJudge:
+        def __init__(self, model):
+            raise RuntimeError("no credentials")
+
+    monkeypatch.setattr(J, "AnthropicJudge", BrokenJudge)
+    result = runner.invoke(app, ["eval", str(DATASET_FIXTURE)])
+    assert result.exit_code != 0
+    assert "Could not initialize the judge client" in result.output
+
+
+def test_eval_missing_anthropic_package_suggests_the_extra(monkeypatch):
+    monkeypatch.setitem(sys.modules, "anthropic", None)
+    result = runner.invoke(app, ["eval", str(DATASET_FIXTURE)])
+    assert result.exit_code != 0
+    # rich's error box can wrap the message across lines, so check the pieces
+    # separately rather than one contiguous substring.
+    assert "pip install" in result.output
+    assert "mastlint[llm]" in result.output
+
+
+def test_eval_judge_error_during_run_exits_nonzero(monkeypatch):
+    class ExplodingJudge:
+        def complete(self, system, user, *, json_schema=None):
+            raise J.JudgeError("simulated API failure")
+
+    monkeypatch.setattr(J, "AnthropicJudge", lambda model: ExplodingJudge())
+    result = runner.invoke(app, ["eval", str(DATASET_FIXTURE)])
+    assert result.exit_code == 1
+    assert "simulated API failure" in result.output
